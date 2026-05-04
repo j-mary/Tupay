@@ -1,66 +1,88 @@
 # Tupay Mobile App
 
-A modern, secure, and performant fintech application built with Flutter. This project is a demonstration of advanced UI fidelity, robust state management, and enterprise-grade architecture.
-
-## Overview
-
-Tupay is designed to provide a seamless payment and transfer experience. It features a responsive dashboard with multi-currency wallets, an interactive transfer flow, and secure state persistence ensuring users never lose their transaction progress.
-
-### Key Features
-- **Pixel-Perfect UI**: High-fidelity implementation of Figma designs, utilizing responsive Slivers and custom components for a premium feel.
-- **Complex Transaction Flow**: A multi-step transaction process (Amount Entry → Recipient Selection → Review → Success) powered by a robust state machine.
-- **Secure State Restoration**: Transaction progress is automatically serialized and securely stored using `flutter_secure_storage`. If the app is killed, the user resumes exactly where they left off.
-- **Multi-Currency Support**: Real-time currency conversion rates and wallet summaries.
-- **Comprehensive Testing**: Full coverage including Unit tests, Widget tests, and Golden (Snapshot) tests to prevent UI regressions.
+Flutter assessment implementation for a secure fintech dashboard and transfer flow.
 
 ## Architecture
 
-The project strictly follows **Feature-First / Clean Architecture**, separating concerns to maximize testability and maintainability.
+The app uses a feature-first structure:
 
-- **Data Layer**: API clients, local storage services (e.g., `SecureStorageService`).
-- **Domain Layer**: Core business logic, models (`Transaction`, `Recipient`, `Currency`), and formatters.
-- **Presentation Layer**: UI components, Screens, and State Management.
+- `lib/core`: navigation, theme, security, privacy overlay, isolate parsing.
+- `lib/features/dashboard`: dashboard state, mock transaction loading, wallet and transaction UI.
+- `lib/features/transactions`: transfer domain entities, async state machine, amount, payment, and review screens.
 
-### State Management
-State is managed using **Riverpod**, providing predictable and scalable state propagation.
-- `TransactionNotifier` utilizes a sealed class hierarchy (`TransactionState`) to represent the exact phase of a transaction (Idle, AmountEntered, RecipientSelected, Reviewing, Completed).
-- State changes trigger an automatic Microtask to persist the state as JSON securely.
+State is managed with Riverpod `AsyncNotifierProvider`s:
 
-## Getting Started
+- `transactionProvider` restores secure transaction progress before `GoRouter` is initialized, then exposes sealed UI states such as `TransactionConfiguring`, `TransactionSelectingPaymentMethod`, and `TransactionReviewing`.
+- `dashboardProvider` keeps dashboard loading/error explicit while preserving the existing `DashboardState` UI model.
 
-### Prerequisites
-- Flutter SDK `^3.11.5` (Compatible with Flutter 3.41.9 via FVM)
-- Dart SDK `^3.7.0`
+## State Restoration
 
-### Installation
-1. Clone the repository.
-2. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
-3. Run the application:
-   ```bash
-   flutter run
-   ```
+Transaction drafts are serialized as JSON into `flutter_secure_storage`. The matching route is stored beside the draft so app startup can restore deterministically to:
+
+- `/transfer` for amount and recipient entry.
+- `/transfer/payment` for payment method selection.
+- `/transfer/review` for review, processing, or success state.
+
+Demo steps:
+
+1. Start a transfer from the dashboard Pay action.
+2. Enter a valid amount and recipient, continue to payment, then select a payment method.
+3. Kill and relaunch the app.
+4. The app opens directly on the restored review step with the same transaction details.
+
+Back buttons update both provider state and `GoRouter` location. Invalid amount or recipient data blocks forward navigation and keeps the user on `/transfer`.
+
+## Security And Privacy
+
+Sensitive transaction drafts and transaction IDs use `flutter_secure_storage`, not shared preferences. `PrivacyOverlay` wraps the app and obscures content when the app is backgrounded, reducing exposure in app switchers.
+
+## Isolate Parsing
+
+`MockTransactionPayloadGenerator` creates a deterministic transaction JSON payload of about 5MB in memory. `TransactionParser.parseLargeJsonBackground` parses and filters that payload through `Isolate.run`, then limits the mapped dashboard list so the visible UI remains fast.
+
+## UI Coverage
+
+The implemented scope focuses on the required assessment surfaces:
+
+- Tupay-style dashboard branding, profile treatment, wallet/action sections, recent transactions, and bottom navigation labels.
+- Transfer amount, payment method, review receipt, CTA bars, and success state.
+- Centralized colors in `AppColors` and `AppTheme`.
 
 ## Testing
 
-This project employs a robust testing strategy ensuring both logic correctness and UI consistency.
+Run static analysis:
 
-- **Run Unit and Widget Tests**:
-  ```bash
-  flutter test
-  ```
-- **Update Golden Tests** (Mac environment required to match baseline renderings):
-  ```bash
-  flutter test --update-goldens
-  ```
-*Note: Font rendering in test environments is overridden and managed locally via mocked channels to ensure stable Golden generation.*
+```bash
+flutter analyze
+```
 
-## Design Decisions
-- **Typography & Theme**: All styles are centralized in `AppTheme`. Google Fonts is used dynamically with local fallback handling during tests.
-- **No Code-Gen**: To keep the build fast and the footprint small, serialization is handled manually without `build_runner` dependencies.
-- **Security First**: Instead of standard `SharedPreferences`, `flutter_secure_storage` encrypts state locally, protecting sensitive transaction parameters.
+Run all tests:
 
-## Contributing
-Ensure all commits pass existing static analysis (`flutter analyze`) and tests (`flutter test`) before pushing changes. Golden tests must be regenerated if UI components are modified.
+```bash
+flutter test
+```
+
+Update goldens after intentional UI changes:
+
+```bash
+flutter test --update-goldens
+```
+
+Assessment coverage checklist:
+
+- Transaction serialization and restoration for payment/review steps.
+- Startup route selection from restored transaction state.
+- Back navigation state transitions.
+- Validation blocking invalid forward navigation.
+- Isolate-backed large JSON generation/parsing.
+- Dashboard and transfer summary goldens.
+- Widget coverage for restored review screen rendering.
+
+## Loom Checklist
+
+1. Show dashboard, wallet cards, quick actions, recent transactions, and bottom nav.
+2. Tap Pay and demonstrate invalid form blocking navigation.
+3. Complete amount and recipient, continue to payment, choose a method, and review.
+4. Kill/restart the app and show direct restoration to the review route.
+5. Submit transfer and show the success state, then return home.
+6. Briefly show `flutter analyze` and `flutter test` passing.

@@ -1,64 +1,54 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/isolate/transaction_parser.dart';
 import '../../domain/models/transaction.dart';
 import 'dashboard_state.dart';
 
-/// A Notifier to manage the state of the Dashboard.
-class DashboardNotifier extends Notifier<DashboardState> {
+/// AsyncNotifier makes dashboard loading/error explicit while DashboardState
+/// preserves the UI contract used by the screen.
+class DashboardNotifier extends AsyncNotifier<DashboardState> {
   @override
-  DashboardState build() {
+  Future<DashboardState> build() async {
     return const DashboardInitial();
   }
 
-  /// Fetches dashboard data, delegating heavy JSON parsing to a background
-  /// isolate via [TransactionParser] to keep the UI thread at 120 FPS.
   Future<void> fetchDashboardData() async {
-    state = const DashboardLoading();
+    state = const AsyncData(DashboardLoading());
 
     try {
-      // Mocked payload standing in for a real 5MB network response.
-      // The isolate filters transactions where amount > 0, so both items here
-      // will pass — demonstrating the filter logic is active.
-      final mockJson = json.encode([
-        {'id': 'TX-001', 'amount': 1500.0, 'status': 'completed'},
-        {'id': 'TX-002', 'amount': 250.0, 'status': 'pending'},
-        {'id': 'TX-003', 'amount': 4.50, 'status': 'completed'},
-      ]);
-
-      // Runs on a separate isolate; the UI thread is never blocked.
+      final mockJson = MockTransactionPayloadGenerator.generateLargeJson();
       final parsedTransactions =
           await TransactionParser.parseLargeJsonBackground(mockJson);
 
-      // Map typed ParsedTransaction objects to our domain Transaction entity.
-      final recentTransactions = parsedTransactions.map((parsed) {
-        return Transaction(
-          id: parsed.id,
-          title: 'Transaction ${parsed.id}',
-          amount: parsed.amount,
-          date: DateTime.now(),
-          isCredit: parsed.status == 'completed',
-        );
-      }).toList();
+      final today = DateTime(2026, 5, 4);
+      final recentTransactions = parsedTransactions
+          .map((parsed) {
+            return Transaction(
+              id: parsed.id,
+              title: 'Transaction ${parsed.id}',
+              amount: parsed.amount,
+              date: today,
+              isCredit: parsed.status == 'completed',
+            );
+          })
+          .toList(growable: false);
 
-      // Simulate network latency on top of isolate processing.
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(milliseconds: 350));
 
-      state = DashboardLoaded(
-        totalBalance: 12543.21,
-        recentTransactions: recentTransactions,
+      state = AsyncData(
+        DashboardLoaded(
+          totalBalance: 12543.21,
+          recentTransactions: recentTransactions,
+        ),
       );
-    } catch (e) {
-      state = DashboardError(e.toString());
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+      state = AsyncData(DashboardError(error.toString()));
     }
   }
 }
 
-/// Global provider for the DashboardNotifier.
-final dashboardProvider = NotifierProvider<DashboardNotifier, DashboardState>(
-  () {
-    return DashboardNotifier();
-  },
-);
+final dashboardProvider =
+    AsyncNotifierProvider<DashboardNotifier, DashboardState>(
+      DashboardNotifier.new,
+    );

@@ -1,8 +1,9 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 /// A widget that wraps the application and applies a blur effect
-/// when the app moves into the background, ensuring sensitive fintech
+/// when the app moves into the background, ensuring sensitive financial
 /// data is not visible in the OS app switcher.
 class PrivacyOverlay extends StatefulWidget {
   final Widget child;
@@ -56,9 +57,7 @@ class _PrivacyOverlayState extends State<PrivacyOverlay>
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                color: Colors.white.withValues(alpha: 0.5),
-              ),
+              child: Container(color: Colors.white.withValues(alpha: 0.5)),
             ),
           ),
       ],

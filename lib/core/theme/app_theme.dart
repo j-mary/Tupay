@@ -17,7 +17,7 @@ class AppTheme {
         onSecondary: AppColors.textDark,
         surface: AppColors.backgroundWhite,
         onSurface: AppColors.textDark,
-        error: Colors.redAccent,
+        error: AppColors.error,
         onError: AppColors.textWhite,
       ),
       textTheme: GoogleFonts.publicSansTextTheme().copyWith(

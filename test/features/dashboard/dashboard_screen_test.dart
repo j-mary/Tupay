@@ -13,13 +13,16 @@ void main() {
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     HttpOverrides.global = null;
-    const MethodChannel channel = MethodChannel('plugins.flutter.io/path_provider');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-      if (methodCall.method == 'getApplicationSupportDirectory') {
-        return '.';
-      }
-      return null;
-    });
+    const MethodChannel channel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+          if (methodCall.method == 'getApplicationSupportDirectory') {
+            return '.';
+          }
+          return null;
+        });
   });
 
   testWidgets('Dashboard Screen Golden Test', (WidgetTester tester) async {
@@ -59,7 +62,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Tupay'), findsOneWidget);
     expect(find.text('\$5000.00', skipOffstage: false), findsOneWidget);
     expect(find.text('Mock Transaction', skipOffstage: false), findsOneWidget);
 
@@ -75,7 +78,7 @@ class MockDashboardNotifier extends DashboardNotifier {
   MockDashboardNotifier(this.mockState);
 
   @override
-  DashboardState build() => mockState;
+  Future<DashboardState> build() async => mockState;
 
   @override
   Future<void> fetchDashboardData() async {}

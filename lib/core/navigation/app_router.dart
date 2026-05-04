@@ -4,13 +4,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/transactions/presentation/screens/payment_method_screen.dart';
+import '../../features/transactions/presentation/providers/transaction_provider.dart';
 import '../../features/transactions/presentation/screens/transfer_config_screen.dart';
 import '../../features/transactions/presentation/screens/transfer_summary_screen.dart';
 
 /// [GoRouter] instance.
 final routerProvider = Provider<GoRouter>((ref) {
+  final restoredTransaction = ref.watch(transactionProvider).requireValue;
+
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: restoredTransaction.routePath,
     routes: [
       GoRoute(
         path: '/',

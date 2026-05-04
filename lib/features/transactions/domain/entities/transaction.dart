@@ -3,27 +3,34 @@ class Currency {
   final String code;
   final String symbol;
 
-  const Currency({
-    required this.code,
-    required this.symbol,
-  });
+  const Currency({required this.code, required this.symbol});
 
   static const usd = Currency(code: 'USD', symbol: '\$');
   static const eur = Currency(code: 'EUR', symbol: '€');
   static const gbp = Currency(code: 'GBP', symbol: '£');
   static const rmb = Currency(code: 'RMB', symbol: '¥');
 
-  Map<String, dynamic> toJson() => {
-        'code': code,
-        'symbol': symbol,
-      };
+  Map<String, dynamic> toJson() => {'code': code, 'symbol': symbol};
 
   factory Currency.fromJson(Map<String, dynamic> json) {
-    return Currency(
-      code: json['code'] as String,
-      symbol: json['symbol'] as String,
-    );
+    final code = json['code'] as String;
+    return switch (code) {
+      'USD' => Currency.usd,
+      'EUR' => Currency.eur,
+      'GBP' => Currency.gbp,
+      'RMB' => Currency.rmb,
+      _ => Currency(code: code, symbol: json['symbol'] as String),
+    };
   }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is Currency && other.code == code && other.symbol == symbol;
+  }
+
+  @override
+  int get hashCode => Object.hash(code, symbol);
 }
 
 /// Represents the recipient of a transaction.
@@ -38,18 +45,15 @@ class Recipient {
     this.bankName,
   });
 
-  const Recipient.empty()
-      : fullName = '',
-        accountNumber = '',
-        bankName = null;
+  const Recipient.empty() : fullName = '', accountNumber = '', bankName = null;
 
   bool get isEmpty => fullName.isEmpty && accountNumber.isEmpty;
 
   Map<String, dynamic> toJson() => {
-        'fullName': fullName,
-        'accountNumber': accountNumber,
-        'bankName': bankName,
-      };
+    'fullName': fullName,
+    'accountNumber': accountNumber,
+    'bankName': bankName,
+  };
 
   factory Recipient.fromJson(Map<String, dynamic> json) {
     return Recipient(
@@ -64,6 +68,7 @@ class Recipient {
 class Transaction {
   final double amount;
   final Currency currency;
+  final Currency recipientCurrency;
   final Recipient recipient;
   final String? paymentMethod;
   final double fee;
@@ -72,6 +77,7 @@ class Transaction {
   const Transaction({
     required this.amount,
     required this.currency,
+    this.recipientCurrency = Currency.eur,
     required this.recipient,
     this.paymentMethod,
     this.fee = 0.0,
@@ -81,6 +87,7 @@ class Transaction {
   Transaction copyWith({
     double? amount,
     Currency? currency,
+    Currency? recipientCurrency,
     Recipient? recipient,
     String? paymentMethod,
     double? fee,
@@ -89,6 +96,7 @@ class Transaction {
     return Transaction(
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
+      recipientCurrency: recipientCurrency ?? this.recipientCurrency,
       recipient: recipient ?? this.recipient,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       fee: fee ?? this.fee,
@@ -99,13 +107,14 @@ class Transaction {
   double get totalToPay => amount + fee;
 
   Map<String, dynamic> toJson() => {
-        'amount': amount,
-        'currency': currency.toJson(),
-        'recipient': recipient.toJson(),
-        'paymentMethod': paymentMethod,
-        'fee': fee,
-        'estimatedArrival': estimatedArrival?.toIso8601String(),
-      };
+    'amount': amount,
+    'currency': currency.toJson(),
+    'recipientCurrency': recipientCurrency.toJson(),
+    'recipient': recipient.toJson(),
+    'paymentMethod': paymentMethod,
+    'fee': fee,
+    'estimatedArrival': estimatedArrival?.toIso8601String(),
+  };
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
     return Transaction(
@@ -113,6 +122,11 @@ class Transaction {
       currency: json['currency'] != null
           ? Currency.fromJson(Map<String, dynamic>.from(json['currency']))
           : Currency.usd,
+      recipientCurrency: json['recipientCurrency'] != null
+          ? Currency.fromJson(
+              Map<String, dynamic>.from(json['recipientCurrency']),
+            )
+          : Currency.eur,
       recipient: json['recipient'] != null
           ? Recipient.fromJson(Map<String, dynamic>.from(json['recipient']))
           : const Recipient.empty(),

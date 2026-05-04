@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tupay_app/core/theme/app_colors.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:tupay_app/features/transactions/presentation/widgets/stepper_component.dart';
 
@@ -12,13 +13,25 @@ class PaymentMethodScreen extends ConsumerWidget {
     ref.watch(transactionProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FB),
+      backgroundColor: AppColors.transferBackground,
       appBar: AppBar(
         title: const Text('Payment Method'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => ref.read(transactionProvider.notifier).backToConfig(),
+          onPressed: () {
+            ref.read(transactionProvider.notifier).backToConfig();
+            context.goNamed('transfer_config');
+          },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              ref.read(transactionProvider.notifier).reset();
+              context.goNamed('dashboard');
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -39,7 +52,7 @@ class PaymentMethodScreen extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF64748B),
+                      color: AppColors.mutedText,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -86,18 +99,20 @@ class PaymentMethodScreen extends ConsumerWidget {
     return InkWell(
       onTap: () {
         ref.read(transactionProvider.notifier).selectPaymentMethod(title);
-        context.pushNamed('transfer_review');
+        context.goNamed('transfer_review');
       },
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.backgroundWhite,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF131B2E).withValues(alpha: 0.05)),
+          border: Border.all(
+            color: AppColors.receiptDark.withValues(alpha: 0.05),
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 32, color: const Color(0xFF191C1E)),
+            Icon(icon, size: 32, color: AppColors.textDark),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -108,20 +123,20 @@ class PaymentMethodScreen extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF191C1E),
+                      color: AppColors.textDark,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF45464D),
+                      color: AppColors.supportingText,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+            const Icon(Icons.chevron_right, color: AppColors.iconMuted),
           ],
         ),
       ),

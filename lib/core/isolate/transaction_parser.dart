@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:math';
 
 /// Represents a simple parsed transaction.
 class ParsedTransaction {
@@ -22,30 +23,62 @@ class ParsedTransaction {
   }
 }
 
+class MockTransactionPayloadGenerator {
+  static const int targetBytes = 5 * 1024 * 1024;
+
+  /// Generate a mock transaction payload large enough to make isolate parsing meaningful.
+  static String generateLargeJson({int targetSizeBytes = targetBytes}) {
+    final random = Random(42);
+    final transactions = <Map<String, Object>>[];
+    var encoded = '[]';
+    var index = 0;
+
+    while (encoded.length < targetSizeBytes) {
+      final amount = index % 11 == 0
+          ? -1 * (random.nextInt(3000) + 1)
+          : random.nextInt(250000) / 100;
+      transactions.add({
+        'id': 'TX-${index.toString().padLeft(6, '0')}',
+        'amount': amount,
+        'status': index % 3 == 0 ? 'pending' : 'completed',
+        'recipient': 'Customer ${index % 250}',
+        'createdAt': DateTime.utc(
+          2026,
+          5,
+          1,
+        ).add(Duration(minutes: index)).toIso8601String(),
+        'memo': 'Deterministic transaction payload row $index',
+      });
+
+      if (index % 500 == 0) {
+        encoded = jsonEncode(transactions);
+      }
+      index++;
+    }
+
+    return jsonEncode(transactions);
+  }
+}
+
 /// A service designed to handle heavy data processing on a background thread.
-/// This ensures the main UI thread stays at a locked 120 FPS.
 class TransactionParser {
-  /// Simulates parsing a 5MB JSON string array into Dart objects.
-  /// Executes the parsing in a background isolate.
-  static Future<List<ParsedTransaction>> parseLargeJsonBackground(String rawJson) async {
-    // Isolate.run spawns a new isolate, runs the callback, returns the result, and closes the isolate.
-    // This is ideal for one-off heavy computations.
-    return await Isolate.run(() {
-      return _parseJsonLogic(rawJson);
-    });
+  static Future<List<ParsedTransaction>> parseLargeJsonBackground(
+    String rawJson, {
+    int visibleLimit = 8,
+  }) async {
+    return Isolate.run(() => _parseJsonLogic(rawJson, visibleLimit));
   }
 
-  /// The actual parsing logic that runs in the background.
-  /// This is a static top-level function logic so it can be passed to the isolate.
-  static List<ParsedTransaction> _parseJsonLogic(String rawJson) {
-    final List<dynamic> decodedList = jsonDecode(rawJson) as List<dynamic>;
-    
-    // Simulating extra CPU work to mimic a 5MB complex payload filter
-    final List<ParsedTransaction> parsed = decodedList
+  static List<ParsedTransaction> _parseJsonLogic(
+    String rawJson,
+    int visibleLimit,
+  ) {
+    final decodedList = jsonDecode(rawJson) as List<dynamic>;
+
+    return decodedList
         .map((e) => ParsedTransaction.fromJson(e as Map<String, dynamic>))
-        .where((t) => t.amount > 0) // Example filter
-        .toList();
-        
-    return parsed;
+        .where((transaction) => transaction.amount > 0)
+        .take(visibleLimit)
+        .toList(growable: false);
   }
 }

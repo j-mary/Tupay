@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/navigation/app_router.dart';
 import 'core/security/privacy_overlay.dart';
 import 'core/theme/app_theme.dart';
+import 'features/transactions/presentation/providers/transaction_provider.dart';
 
 void main() {
   // Ensure Flutter bindings are initialized
@@ -17,6 +18,18 @@ class TupayApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final restoredTransaction = ref.watch(transactionProvider);
+
+    if (restoredTransaction.isLoading && !restoredTransaction.hasValue) {
+      return MaterialApp(
+        title: 'Tupay',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        restorationScopeId: 'tupay_app',
+        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(

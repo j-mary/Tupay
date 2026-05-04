@@ -12,16 +12,21 @@ void main() {
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
     HttpOverrides.global = null;
-    const MethodChannel channel = MethodChannel('plugins.flutter.io/path_provider');
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-      if (methodCall.method == 'getApplicationSupportDirectory') {
-        return '.';
-      }
-      return null;
-    });
+    const MethodChannel channel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+          if (methodCall.method == 'getApplicationSupportDirectory') {
+            return '.';
+          }
+          return null;
+        });
   });
 
-  testWidgets('Transfer Summary Screen Golden Test', (WidgetTester tester) async {
+  testWidgets('Transfer Summary Screen Golden Test', (
+    WidgetTester tester,
+  ) async {
     // Provide a mocked state
     final mockTx = Transaction(
       amount: 150.0,
@@ -66,6 +71,44 @@ void main() {
       matchesGoldenFile('goldens/transfer_summary_screen.png'),
     );
   });
+
+  testWidgets('shows success modal after review submit', (
+    WidgetTester tester,
+  ) async {
+    final mockTx = Transaction(
+      amount: 150.0,
+      currency: Currency.usd,
+      recipient: const Recipient(
+        fullName: 'John Doe',
+        accountNumber: '1234567890',
+      ),
+      paymentMethod: 'Debit Card',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          transactionProvider.overrideWith(
+            () => MockTransactionNotifier(TransactionReviewing(mockTx)),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const TransferSummaryScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('REVIEW & SEND'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 20));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transfer Successful!'), findsOneWidget);
+  });
 }
 
 class MockTransactionNotifier extends TransactionNotifier {
@@ -73,5 +116,13 @@ class MockTransactionNotifier extends TransactionNotifier {
   MockTransactionNotifier(this.mockState);
 
   @override
-  TransactionState build() => mockState;
+  Future<TransactionState> build() async => mockState;
+
+  @override
+  Future<void> submitTransaction() async {
+    final transaction = currentState.transaction;
+    state = AsyncData(TransactionProcessing(transaction));
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    state = AsyncData(TransactionSuccess(transaction));
+  }
 }

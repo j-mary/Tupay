@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tupay_app/core/theme/app_colors.dart';
+import 'package:tupay_app/core/utils/currency_converter.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:tupay_app/features/transactions/presentation/widgets/jagged_receipt_edge.dart';
 import 'package:tupay_app/features/transactions/presentation/widgets/stepper_component.dart';
@@ -10,29 +12,55 @@ class TransferSummaryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<TransactionState>(transactionProvider, (previous, next) {
-      if (next is TransactionSuccess) {
-        _showSuccessDialog(context, ref);
-      } else if (next is TransactionError) {
+    ref.listen<AsyncValue<TransactionState>>(transactionProvider, (
+      previous,
+      next,
+    ) {
+      final nextState = next.asData?.value;
+      final previousState = previous?.asData?.value;
+      if (nextState is TransactionSuccess &&
+          previousState is! TransactionSuccess) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            _showSuccessDialog(context, ref);
+          }
+        });
+      } else if (nextState is TransactionError) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(nextState.message),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     });
 
-    final state = ref.watch(transactionProvider);
+    final state =
+        ref.watch(transactionProvider).asData?.value ??
+        TransactionState.initial();
     final transaction = state.transaction;
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FB),
+      backgroundColor: AppColors.transferBackground,
       appBar: AppBar(
         title: const Text('Review Transfer'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () =>
-              ref.read(transactionProvider.notifier).backToPaymentMethod(),
+          onPressed: () {
+            ref.read(transactionProvider.notifier).backToPaymentMethod();
+            context.goNamed('payment_method');
+          },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              ref.read(transactionProvider.notifier).reset();
+              context.goNamed('dashboard');
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -82,7 +110,7 @@ class TransferSummaryScreen extends ConsumerWidget {
       style: const TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: Color(0xFF64748B),
+        color: AppColors.mutedText,
         letterSpacing: 1.2,
       ),
     );
@@ -96,15 +124,15 @@ class TransferSummaryScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: const Color(0xFFF1F5F9),
-            child: Icon(icon, color: const Color(0xFF131B2E), size: 20),
+            backgroundColor: AppColors.fieldFill,
+            child: Icon(icon, color: AppColors.receiptDark, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -121,7 +149,7 @@ class TransferSummaryScreen extends ConsumerWidget {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    color: Color(0xFF64748B),
+                    color: AppColors.mutedText,
                     fontSize: 14,
                   ),
                 ),
@@ -134,7 +162,12 @@ class TransferSummaryScreen extends ConsumerWidget {
   }
 
   Widget _buildDetailedSummaryCard(ThemeData theme, var transaction) {
-    const cardColor = Color(0xFF131B2E);
+    const cardColor = AppColors.receiptDark;
+    final recipientAmount = CurrencyConverter.convert(
+      amount: transaction.amount,
+      fromCurrency: transaction.currency.code,
+      toCurrency: transaction.recipientCurrency.code,
+    );
     return Column(
       children: [
         const JaggedReceiptEdge(color: cardColor, isTop: true),
@@ -147,7 +180,7 @@ class TransferSummaryScreen extends ConsumerWidget {
               const Text(
                 'Transfer Details',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textWhite,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),
@@ -157,12 +190,22 @@ class TransferSummaryScreen extends ConsumerWidget {
                 'Sending Amount',
                 '${transaction.amount.toStringAsFixed(2)} ${transaction.currency.code}',
               ),
-              _buildSummaryItem('Exchange Rate', '1 ${transaction.currency.code} = 1.00 ${transaction.currency.code}'),
-              _buildSummaryItem('Recipient Gets', '${transaction.amount.toStringAsFixed(2)} ${transaction.currency.code}'),
-              _buildSummaryItem('Fees', '${transaction.fee.toStringAsFixed(2)} ${transaction.currency.code}', isPromo: transaction.fee == 0),
+              _buildSummaryItem(
+                'Exchange Rate',
+                '1 ${transaction.currency.code} = ${CurrencyConverter.convert(amount: 1, fromCurrency: transaction.currency.code, toCurrency: transaction.recipientCurrency.code).toStringAsFixed(2)} ${transaction.recipientCurrency.code}',
+              ),
+              _buildSummaryItem(
+                'Recipient Gets',
+                '${recipientAmount.toStringAsFixed(2)} ${transaction.recipientCurrency.code}',
+              ),
+              _buildSummaryItem(
+                'Fees',
+                '${transaction.fee.toStringAsFixed(2)} ${transaction.currency.code}',
+                isPromo: transaction.fee == 0,
+              ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.0),
-                child: Divider(color: Color(0xFF3F465C)),
+                child: Divider(color: AppColors.receiptDivider),
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -171,7 +214,7 @@ class TransferSummaryScreen extends ConsumerWidget {
                     'TOTAL TO PAY',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF7C839B),
+                      color: AppColors.textGrey,
                       letterSpacing: 1.6,
                     ),
                   ),
@@ -180,7 +223,7 @@ class TransferSummaryScreen extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      color: AppColors.textWhite,
                     ),
                   ),
                 ],
@@ -199,11 +242,13 @@ class TransferSummaryScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Color(0xFF7C839B))),
+          Text(label, style: const TextStyle(color: AppColors.textGrey)),
           Text(
             value,
             style: TextStyle(
-              color: isPromo ? const Color(0xFF6FFBBE) : Colors.white,
+              color: isPromo
+                  ? AppColors.successGreenLight
+                  : AppColors.textWhite,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -222,10 +267,10 @@ class TransferSummaryScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.backgroundWhite,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: AppColors.shadow,
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -238,8 +283,8 @@ class TransferSummaryScreen extends ConsumerWidget {
                 ref.read(transactionProvider.notifier).submitTransaction();
               },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF006C49),
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.successPrimary,
+          foregroundColor: AppColors.textWhite,
           minimumSize: const Size(double.infinity, 56),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -250,7 +295,7 @@ class TransferSummaryScreen extends ConsumerWidget {
                 height: 24,
                 width: 24,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: AppColors.textWhite,
                   strokeWidth: 2,
                 ),
               )
@@ -275,7 +320,11 @@ class TransferSummaryScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 16),
-            const Icon(Icons.check_circle, color: Color(0xFF006C49), size: 64),
+            const Icon(
+              Icons.check_circle,
+              color: AppColors.successPrimary,
+              size: 64,
+            ),
             const SizedBox(height: 24),
             const Text(
               'Transfer Successful!',
@@ -285,7 +334,7 @@ class TransferSummaryScreen extends ConsumerWidget {
             const Text(
               'Your money is on its way.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF64748B)),
+              style: TextStyle(color: AppColors.mutedText),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -294,8 +343,8 @@ class TransferSummaryScreen extends ConsumerWidget {
                 context.goNamed('dashboard');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF006C49),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.successPrimary,
+                foregroundColor: AppColors.textWhite,
                 minimumSize: const Size(double.infinity, 48),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/dashboard_state.dart';
 import '../widgets/total_balance_card.dart';
@@ -27,22 +28,57 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(dashboardProvider);
+    final asyncState = ref.watch(dashboardProvider);
+    final state = asyncState.asData?.value;
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: AppColors.receiptDark,
+                shape: BoxShape.circle,
+              ),
+              child: const Text(
+                'T',
+                style: TextStyle(
+                  color: AppColors.textWhite,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Text('Tupay'),
+          ],
+        ),
         centerTitle: false,
         actions: [
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.notifications_outlined),
           ),
-          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              radius: 17,
+              backgroundColor: AppColors.fieldFill,
+              child: Text(
+                'AR',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
-      body: state is DashboardLoading
+      body: asyncState.isLoading || state is DashboardLoading
           ? const Center(child: CircularProgressIndicator())
           : state is DashboardError
           ? Center(child: Text('Error: ${state.errorMessage}'))
@@ -77,7 +113,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             'Pay',
                             Icons.payment,
                             AppColors.actionPayBg,
-                            () => context.pushNamed('transfer_config'),
+                            () {
+                              ref
+                                  .read(transactionProvider.notifier)
+                                  .beginTransfer();
+                              context.goNamed('transfer_config');
+                            },
                           ),
                           _buildQuickAction(
                             context,
@@ -93,10 +134,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                      child: Text(
-                        'Wallets',
-                        style: theme.textTheme.titleLarge,
-                      ),
+                      child: Text('Wallets', style: theme.textTheme.titleLarge),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -141,7 +179,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           TextButton(
                             onPressed: () {},
                             style: TextButton.styleFrom(
-                              foregroundColor: AppColors.successGreen,
+                              foregroundColor: AppColors.successPrimary,
                             ),
                             child: const Text('See all'),
                           ),
@@ -160,7 +198,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 ? Icons.arrow_downward
                                 : Icons.arrow_upward,
                             color: tx.isCredit
-                                ? AppColors.successGreen
+                                ? AppColors.successPrimary
                                 : Theme.of(context).colorScheme.error,
                           ),
                         ),
@@ -179,7 +217,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: tx.isCredit
-                                ? AppColors.successGreen
+                                ? AppColors.successPrimary
                                 : AppColors.textDark,
                           ),
                         ),
@@ -196,7 +234,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.backgroundWhite,
-        selectedItemColor: AppColors.successGreen,
+        selectedItemColor: AppColors.successPrimary,
         unselectedItemColor: AppColors.textGrey,
         showUnselectedLabels: true,
         items: const [
@@ -208,12 +246,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet_outlined),
             activeIcon: Icon(Icons.account_balance_wallet),
-            label: 'Wallets',
+            label: 'Wallet',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.swap_horiz_outlined),
             activeIcon: Icon(Icons.swap_horiz),
-            label: 'Transactions',
+            label: 'Transfer',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -238,17 +276,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: bgColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
             child: Icon(icon, color: AppColors.textDark),
           ),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
+          Text(label, style: Theme.of(context).textTheme.labelMedium),
         ],
       ),
     );

@@ -9,6 +9,8 @@ class SecureStorageService {
   SecureStorageService(this._storage);
 
   static const String _transactionIdKey = 'transaction_id';
+  static const String _transactionRouteKey = 'transaction_route';
+  static const String _transactionStateKey = 'transaction_state';
 
   /// Saves a user's transaction ID securely.
   Future<void> saveTransactionId(String transactionId) async {
@@ -25,8 +27,6 @@ class SecureStorageService {
     await _storage.delete(key: _transactionIdKey);
   }
 
-  static const String _transactionStateKey = 'transaction_state';
-
   /// Saves the serialized transaction state securely.
   Future<void> saveTransactionState(String stateJson) async {
     await _storage.write(key: _transactionStateKey, value: stateJson);
@@ -40,5 +40,20 @@ class SecureStorageService {
   /// Clears the saved transaction state.
   Future<void> clearTransactionState() async {
     await _storage.delete(key: _transactionStateKey);
+  }
+
+  /// Persists the exact transfer route beside the sensitive transaction draft.
+  Future<void> saveTransactionRoute(String route) async {
+    await _storage.write(key: _transactionRouteKey, value: route);
+  }
+
+  /// Retrieves the last transfer route that matched the saved draft state.
+  Future<String?> getTransactionRoute() async {
+    return await _storage.read(key: _transactionRouteKey);
+  }
+
+  /// Clears the saved transfer route.
+  Future<void> clearTransactionRoute() async {
+    await _storage.delete(key: _transactionRouteKey);
   }
 }

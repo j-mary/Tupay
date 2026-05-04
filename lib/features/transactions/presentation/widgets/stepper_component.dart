@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tupay_app/core/theme/app_colors.dart';
 
 /// A widget that displays the current step in the transaction flow.
 class StepperComponent extends StatelessWidget {
@@ -34,8 +35,8 @@ class StepperComponent extends StatelessWidget {
               child: Container(
                 height: 2,
                 color: isActive
-                    ? const Color(0xFF006C49)
-                    : const Color(0xFFE2E8F0),
+                    ? AppColors.successPrimary
+                    : AppColors.cardBorder,
               ),
             );
           }
@@ -63,19 +64,19 @@ class _StepCircle extends StatelessWidget {
       height: 32,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isActive ? const Color(0xFF006C49) : Colors.transparent,
+        color: isActive ? AppColors.successPrimary : Colors.transparent,
         border: Border.all(
-          color: isActive ? const Color(0xFF006C49) : const Color(0xFFE2E8F0),
+          color: isActive ? AppColors.successPrimary : AppColors.cardBorder,
           width: 2,
         ),
       ),
       child: Center(
         child: isCompleted
-            ? const Icon(Icons.check, color: Colors.white, size: 16)
+            ? const Icon(Icons.check, color: AppColors.textWhite, size: 16)
             : Text(
                 '$number',
                 style: TextStyle(
-                  color: isActive ? Colors.white : const Color(0xFF94A3B8),
+                  color: isActive ? AppColors.textWhite : AppColors.iconMuted,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
