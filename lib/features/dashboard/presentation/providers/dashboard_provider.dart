@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/isolate/transaction_parser.dart';
 import '../../domain/models/transaction.dart';
 import 'dashboard_state.dart';
 
@@ -9,53 +13,52 @@ class DashboardNotifier extends Notifier<DashboardState> {
     return const DashboardInitial();
   }
 
-  /// Simulates fetching dashboard data from a remote source or local database.
+  /// Fetches dashboard data, delegating heavy JSON parsing to a background
+  /// isolate via [TransactionParser] to keep the UI thread at 120 FPS.
   Future<void> fetchDashboardData() async {
-    // Transition to loading state
     state = const DashboardLoading();
 
     try {
-      // Simulate network delay
-      await Future.delayed(const Duration(seconds: 2));
+      // Mocked payload standing in for a real 5MB network response.
+      // The isolate filters transactions where amount > 0, so both items here
+      // will pass — demonstrating the filter logic is active.
+      final mockJson = json.encode([
+        {'id': 'TX-001', 'amount': 1500.0, 'status': 'completed'},
+        {'id': 'TX-002', 'amount': 250.0, 'status': 'pending'},
+        {'id': 'TX-003', 'amount': 4.50, 'status': 'completed'},
+      ]);
 
-      // Mock fetched data
-      final mockTransactions = [
-        Transaction(
-          id: '1',
-          title: 'Grocery Store',
-          amount: 45.99,
-          date: DateTime.now().subtract(const Duration(hours: 2)),
-          isCredit: false,
-        ),
-        Transaction(
-          id: '2',
-          title: 'Salary Deposit',
-          amount: 3200.00,
-          date: DateTime.now().subtract(const Duration(days: 1)),
-          isCredit: true,
-        ),
-        Transaction(
-          id: '3',
-          title: 'Coffee Shop',
-          amount: 4.50,
-          date: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
-          isCredit: false,
-        ),
-      ];
+      // Runs on a separate isolate; the UI thread is never blocked.
+      final parsedTransactions =
+          await TransactionParser.parseLargeJsonBackground(mockJson);
 
-      // Transition to loaded state
+      // Map typed ParsedTransaction objects to our domain Transaction entity.
+      final recentTransactions = parsedTransactions.map((parsed) {
+        return Transaction(
+          id: parsed.id,
+          title: 'Transaction ${parsed.id}',
+          amount: parsed.amount,
+          date: DateTime.now(),
+          isCredit: parsed.status == 'completed',
+        );
+      }).toList();
+
+      // Simulate network latency on top of isolate processing.
+      await Future.delayed(const Duration(seconds: 1));
+
       state = DashboardLoaded(
         totalBalance: 12543.21,
-        recentTransactions: mockTransactions,
+        recentTransactions: recentTransactions,
       );
     } catch (e) {
-      // Transition to error state if something goes wrong
       state = DashboardError(e.toString());
     }
   }
 }
 
 /// Global provider for the DashboardNotifier.
-final dashboardProvider = NotifierProvider<DashboardNotifier, DashboardState>(() {
-  return DashboardNotifier();
-});
+final dashboardProvider = NotifierProvider<DashboardNotifier, DashboardState>(
+  () {
+    return DashboardNotifier();
+  },
+);
