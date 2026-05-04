@@ -78,11 +78,14 @@ Assessment coverage checklist:
 - Dashboard and transfer summary goldens.
 - Widget coverage for restored review screen rendering.
 
-## Loom Checklist
+## Android Emulator Recording
+
+The submission video is a 2-minute screen recording from an Android emulator.
 
 1. Show dashboard, wallet cards, quick actions, recent transactions, and bottom nav.
-2. Tap Pay and demonstrate invalid form blocking navigation.
-3. Complete amount and recipient, continue to payment, choose a method, and review.
-4. Kill/restart the app and show direct restoration to the review route.
-5. Submit transfer and show the success state, then return home.
-6. Briefly show `flutter analyze` and `flutter test` passing.
+2. Sscroll through the content to show the page stays responsive.
+3. Tap Pay, enter the transfer amount and recipient details, and show the inline validation and currency switching.
+4. Continue to payment, choose a payment method, and review the transfer.
+5. Kill/restart the app and show direct restoration to the review route.
+6. Submit transfer and show the success state, then return home.
+7. When the app is hidden/backgrounded the blur effect kicks in, masking sensitive content in app switchers.

@@ -33,7 +33,8 @@ class _PrivacyOverlayState extends State<PrivacyOverlay>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
       if (!_isObscured) {
         setState(() {
           _isObscured = true;
@@ -56,8 +57,8 @@ class _PrivacyOverlayState extends State<PrivacyOverlay>
         if (_isObscured)
           Positioned.fill(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(color: Colors.white.withValues(alpha: 0.5)),
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(color: Colors.white.withValues(alpha: 0.68)),
             ),
           ),
       ],

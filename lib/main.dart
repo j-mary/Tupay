@@ -23,31 +23,26 @@ class TupayApp extends ConsumerWidget {
       transactionProvider.select((state) => state.isLoading && !state.hasValue),
     );
 
-    if (isRestoringTransaction) {
-      return MaterialApp(
-        title: 'Tupay',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        scrollBehavior: const AppScrollBehavior(),
-        restorationScopeId: 'tupay_app',
-        home: const Scaffold(body: Center(child: CircularProgressIndicator())),
-      );
-    }
+    final app = isRestoringTransaction
+        ? MaterialApp(
+            title: 'Tupay',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            scrollBehavior: const AppScrollBehavior(),
+            restorationScopeId: 'tupay_app',
+            home: const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          )
+        : MaterialApp.router(
+            title: 'Tupay',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            scrollBehavior: const AppScrollBehavior(),
+            routerConfig: ref.watch(routerProvider),
+            restorationScopeId: 'tupay_app',
+          );
 
-    final router = ref.watch(routerProvider);
-
-    return MaterialApp.router(
-      title: 'Tupay',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      scrollBehavior: const AppScrollBehavior(),
-      routerConfig: router,
-      restorationScopeId: 'tupay_app',
-      // The PrivacyOverlay wrapper is to handle background blurring
-      builder: (context, child) {
-        if (child == null) return const SizedBox.shrink();
-        return PrivacyOverlay(child: child);
-      },
-    );
+    return PrivacyOverlay(child: app);
   }
 }
