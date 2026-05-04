@@ -68,19 +68,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onPressed: () {},
             icon: const Icon(Icons.notifications_outlined),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 17,
-              backgroundColor: AppColors.fieldFill,
-              child: Text(
-                'AR',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
         ],
       ),
       body: state is DashboardError
@@ -186,7 +173,6 @@ class _DashboardContent extends StatelessWidget {
             delegate: TotalBalanceCardDelegate(
               totalBalance: state.totalBalance,
               isBalanceHidden: isBalanceHidden,
-              onAddFunds: () {},
               onToggleBalanceVisibility: onToggleBalanceVisibility,
             ),
           ),
