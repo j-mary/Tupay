@@ -1,4 +1,4 @@
-# Tupay Mobile App
+# Tupay Assessment Mobile App
 
 Flutter assessment implementation for a secure fintech dashboard and transfer flow.
 
