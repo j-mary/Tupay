@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:tupay_app/core/utils/amount_input_formatter.dart';
 import 'package:tupay_app/core/navigation/app_router.dart';
 import 'package:tupay_app/core/theme/app_colors.dart';
+import 'package:tupay_app/core/utils/amount_input_formatter.dart';
 import 'package:tupay_app/core/utils/currency_converter.dart';
 import 'package:tupay_app/core/utils/currency_formatter.dart';
 import 'package:tupay_app/core/widgets/currency_text.dart';
@@ -366,6 +367,8 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _accountController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: const InputDecoration(
               labelText: 'IBAN / Account Number',
               border: OutlineInputBorder(),

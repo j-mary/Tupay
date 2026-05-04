@@ -35,7 +35,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final asyncState = ref.watch(dashboardProvider);
     final state = asyncState.asData?.value;
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(

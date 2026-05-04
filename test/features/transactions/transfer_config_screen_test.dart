@@ -146,6 +146,27 @@ void main() {
     expect(find.text('Amount must be greater than zero'), findsWidgets);
     expect(find.byType(TransferConfigScreen), findsOneWidget);
   });
+
+  testWidgets('account number input accepts digits only', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const TransferConfigScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(1), '12ab34cd56');
+    await tester.pumpAndSettle();
+
+    expect(find.text('123456'), findsOneWidget);
+    expect(find.textContaining('ab'), findsNothing);
+    expect(find.textContaining('cd'), findsNothing);
+  });
 }
 
 Finder _amountField() {
