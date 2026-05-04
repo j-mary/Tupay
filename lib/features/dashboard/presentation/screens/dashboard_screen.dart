@@ -23,6 +23,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _currentIndex = 0;
   bool _isBalanceHidden = false;
   bool _showScrollToTop = false;
+  bool _isReturningToTop = false;
   late final ScrollController _scrollController;
 
   @override
@@ -119,16 +120,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 },
               ),
             ),
-      floatingActionButton: _showScrollToTop
-          ? FloatingActionButton(
-              onPressed: () {
-                if (_scrollController.hasClients) {
-                  _scrollController.jumpTo(0);
-                }
-              },
-              backgroundColor: AppColors.successPrimary,
-              foregroundColor: AppColors.textWhite,
-              child: const Icon(Icons.keyboard_arrow_up),
+      floatingActionButton: _showScrollToTop || _isReturningToTop
+          ? Visibility(
+              visible: false,
+              child: FloatingActionButton(
+                onPressed: _isReturningToTop
+                    ? null
+                    : () async {
+                        if (!_scrollController.hasClients) return;
+                        setState(() {
+                          _isReturningToTop = true;
+                        });
+                        _scrollController.jumpTo(0);
+                        await Future<void>.delayed(
+                          const Duration(milliseconds: 250),
+                        );
+                        if (!mounted) return;
+                        setState(() {
+                          _isReturningToTop = false;
+                        });
+                      },
+                backgroundColor: AppColors.successPrimary,
+                foregroundColor: AppColors.textWhite,
+                child: _isReturningToTop
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.textWhite,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.keyboard_arrow_up),
+              ),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -381,9 +407,33 @@ class _DashboardContent extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Recent Transactions',
-                    style: theme.textTheme.titleLarge,
+                  Row(
+                    children: [
+                      Text(
+                        'Recent Transactions',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.fieldFill,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          _formatCount(state.totalProcessedTransactions),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: AppColors.textDark,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   TextButton(
                     onPressed: () {},
@@ -410,6 +460,19 @@ class _DashboardContent extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatCount(int value) {
+  final raw = value.toString();
+  final buffer = StringBuffer();
+  for (var i = 0; i < raw.length; i++) {
+    final remaining = raw.length - i;
+    buffer.write(raw[i]);
+    if (remaining > 1 && remaining % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  return buffer.toString();
 }
 
 class _QuickAction extends StatelessWidget {
