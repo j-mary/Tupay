@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/currency_text.dart';
 
 class TotalBalanceCardDelegate extends SliverPersistentHeaderDelegate {
   final double totalBalance;
@@ -66,8 +67,9 @@ class TotalBalanceCardDelegate extends SliverPersistentHeaderDelegate {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              '\$${totalBalance.toStringAsFixed(2)}',
+            CurrencyText(
+              amount: totalBalance,
+              currencyCode: 'USD',
               style: Theme.of(context).textTheme.displayLarge,
             ),
             const Spacer(),

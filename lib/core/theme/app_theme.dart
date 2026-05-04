@@ -7,6 +7,8 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get lightTheme {
+    final textTheme = _publicSansTextTheme();
+
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: AppColors.backgroundOffWhite,
@@ -20,39 +22,39 @@ class AppTheme {
         error: AppColors.error,
         onError: AppColors.textWhite,
       ),
-      textTheme: GoogleFonts.publicSansTextTheme().copyWith(
-        displayLarge: GoogleFonts.publicSans(
+      textTheme: textTheme.copyWith(
+        displayLarge: _publicSans(
           fontSize: 36,
           fontWeight: FontWeight.w400,
           color: AppColors.textWhite,
           letterSpacing: -0.9,
         ),
-        displayMedium: GoogleFonts.publicSans(
+        displayMedium: _publicSans(
           fontSize: 28,
           fontWeight: FontWeight.w400,
           color: AppColors.textWhite,
         ),
-        titleLarge: GoogleFonts.publicSans(
+        titleLarge: _publicSans(
           fontSize: 18,
           fontWeight: FontWeight.w400,
           color: AppColors.textHeading,
         ),
-        bodyLarge: GoogleFonts.publicSans(
+        bodyLarge: _publicSans(
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: AppColors.textDark,
         ),
-        bodyMedium: GoogleFonts.publicSans(
+        bodyMedium: _publicSans(
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: AppColors.textGrey,
         ),
-        labelMedium: GoogleFonts.publicSans(
+        labelMedium: _publicSans(
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: AppColors.textDark,
         ),
-        labelSmall: GoogleFonts.publicSans(
+        labelSmall: _publicSans(
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: AppColors.successGreenLight,
@@ -85,6 +87,35 @@ class AppTheme {
           side: const BorderSide(color: AppColors.cardStroke),
         ),
       ),
+    );
+  }
+
+  static TextTheme _publicSansTextTheme() {
+    if (!GoogleFonts.config.allowRuntimeFetching) {
+      return ThemeData.light().textTheme;
+    }
+    return GoogleFonts.publicSansTextTheme();
+  }
+
+  static TextStyle _publicSans({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+    double? letterSpacing,
+  }) {
+    if (!GoogleFonts.config.allowRuntimeFetching) {
+      return TextStyle(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
+    }
+    return GoogleFonts.publicSans(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      letterSpacing: letterSpacing,
     );
   }
 }

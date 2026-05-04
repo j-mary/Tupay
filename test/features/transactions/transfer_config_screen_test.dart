@@ -32,7 +32,51 @@ void main() {
     await tester.enterText(_amountField(), '100');
     await tester.pumpAndSettle();
 
-    expect(find.text('85.00'), findsOneWidget);
+    expect(find.text('¥0.50'), findsOneWidget);
+  });
+
+  testWidgets('amount input keeps keyboard focus while typing', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const TransferConfigScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(_amountField());
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    await tester.enterText(_amountField(), '2500');
+    await tester.pumpAndSettle();
+
+    expect(tester.testTextInput.isVisible, isTrue);
+    expect(find.text('¥12.39'), findsOneWidget);
+  });
+
+  testWidgets('amount input formats thousands while typing', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const TransferConfigScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(_amountField(), '5000');
+    await tester.pumpAndSettle();
+
+    expect(find.text('5,000'), findsOneWidget);
+    expect(find.text('¥24.78'), findsOneWidget);
   });
 
   testWidgets('currency selectors update conversion state', (
@@ -50,12 +94,12 @@ void main() {
 
     await tester.enterText(_amountField(), '100');
     await tester.pump();
-    await tester.tap(find.text('USD').first);
+    await tester.tap(find.text('RMB').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('GBP').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('114.86'), findsOneWidget);
+    expect(find.text('£0.05'), findsOneWidget);
   });
 
   testWidgets('close exits transfer flow from config screen', (
@@ -81,6 +125,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Tupay'), findsOneWidget);
+  });
+
+  testWidgets('continue displays validation feedback when form is invalid', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const TransferConfigScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('CONTINUE'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Amount must be greater than zero'), findsWidgets);
+    expect(find.byType(TransferConfigScreen), findsOneWidget);
   });
 }
 

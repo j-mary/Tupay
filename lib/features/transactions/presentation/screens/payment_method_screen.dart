@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tupay_app/core/navigation/app_router.dart';
 import 'package:tupay_app/core/theme/app_colors.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:tupay_app/features/transactions/presentation/widgets/stepper_component.dart';
@@ -20,7 +21,7 @@ class PaymentMethodScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             ref.read(transactionProvider.notifier).backToConfig();
-            context.goNamed('transfer_config');
+            context.goNamed(transferConfigRouteName);
           },
         ),
         actions: [
@@ -28,7 +29,7 @@ class PaymentMethodScreen extends ConsumerWidget {
             icon: const Icon(Icons.close),
             onPressed: () {
               ref.read(transactionProvider.notifier).reset();
-              context.goNamed('dashboard');
+              context.goNamed(dashboardRouteName);
             },
           ),
         ],
@@ -99,7 +100,7 @@ class PaymentMethodScreen extends ConsumerWidget {
     return InkWell(
       onTap: () {
         ref.read(transactionProvider.notifier).selectPaymentMethod(title);
-        context.goNamed('transfer_review');
+        context.goNamed(transferReviewRouteName);
       },
       child: Container(
         padding: const EdgeInsets.all(20),

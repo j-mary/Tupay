@@ -5,23 +5,10 @@ import 'package:tupay_app/core/theme/app_theme.dart';
 import 'package:tupay_app/features/transactions/domain/entities/transaction.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:tupay_app/features/transactions/presentation/screens/transfer_summary_screen.dart';
-import 'package:flutter/services.dart';
-import 'dart:io';
 
 void main() {
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
-    HttpOverrides.global = null;
-    const MethodChannel channel = MethodChannel(
-      'plugins.flutter.io/path_provider',
-    );
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-          if (methodCall.method == 'getApplicationSupportDirectory') {
-            return '.';
-          }
-          return null;
-        });
   });
 
   testWidgets('Transfer Summary Screen Golden Test', (
@@ -64,7 +51,7 @@ void main() {
 
     expect(find.text('Review Transfer'), findsOneWidget);
     expect(find.text('John Doe'), findsOneWidget);
-    expect(find.text('152.50 USD'), findsOneWidget); // totalToPay
+    expect(find.text('\$152.50'), findsOneWidget); // totalToPay
 
     await expectLater(
       find.byType(MaterialApp),

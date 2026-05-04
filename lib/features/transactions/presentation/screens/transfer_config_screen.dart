@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tupay_app/core/utils/amount_input_formatter.dart';
+import 'package:tupay_app/core/navigation/app_router.dart';
 import 'package:tupay_app/core/theme/app_colors.dart';
 import 'package:tupay_app/core/utils/currency_converter.dart';
+import 'package:tupay_app/core/utils/currency_formatter.dart';
+import 'package:tupay_app/core/widgets/currency_text.dart';
 import 'package:tupay_app/features/transactions/domain/entities/transaction.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:tupay_app/features/transactions/presentation/widgets/jagged_receipt_edge.dart';
@@ -20,7 +24,11 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
   late TextEditingController _amountController;
   late TextEditingController _nameController;
   late TextEditingController _accountController;
+  late FocusNode _amountFocusNode;
+  late Transaction _draftTransaction;
+  String? _validationMessage;
   static const _currencies = [
+    Currency.ngn,
     Currency.usd,
     Currency.eur,
     Currency.gbp,
@@ -33,6 +41,7 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
     final transaction =
         ref.read(transactionProvider).asData?.value.transaction ??
         TransactionState.initial().transaction;
+    _draftTransaction = transaction;
     _amountController = TextEditingController(
       text: transaction.amount > 0 ? transaction.amount.toString() : '',
     );
@@ -42,12 +51,12 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
     _accountController = TextEditingController(
       text: transaction.recipient.accountNumber,
     );
-    _amountController.addListener(_syncAmount);
+    _amountFocusNode = FocusNode();
   }
 
   @override
   void dispose() {
-    _amountController.removeListener(_syncAmount);
+    _amountFocusNode.dispose();
     _amountController.dispose();
     _nameController.dispose();
     _accountController.dispose();
@@ -56,9 +65,6 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final transaction =
-        ref.watch(transactionProvider).asData?.value.transaction ??
-        TransactionState.initial().transaction;
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -109,13 +115,33 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
                 delegate: SliverChildListDelegate([
                   _buildSectionTitle('SEND MONEY'),
                   const SizedBox(height: 16),
-                  _buildAmountCard(theme, transaction),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _amountController,
+                    builder: (context, value, child) {
+                      return _buildAmountCard(
+                        theme,
+                        _draftTransaction.copyWith(amount: _enteredAmount),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 32),
                   _buildSectionTitle('RECIPIENT DETAILS'),
                   const SizedBox(height: 16),
                   _buildRecipientForm(theme),
+                  if (_validationMessage != null) ...[
+                    const SizedBox(height: 12),
+                    _buildValidationMessage(_validationMessage!),
+                  ],
                   const SizedBox(height: 32),
-                  _buildSummaryCard(theme, transaction),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _amountController,
+                    builder: (context, value, child) {
+                      return _buildSummaryCard(
+                        theme,
+                        _draftTransaction.copyWith(amount: _enteredAmount),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 32),
                   _buildTrustBadge(theme),
                   const SizedBox(height: 48),
@@ -129,14 +155,35 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
     );
   }
 
-  void _syncAmount() {
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
-    ref.read(transactionProvider.notifier).updateAmount(amount);
+  double get _enteredAmount =>
+      double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0.0;
+
+  void _syncAmount(String value) {
+    if (_validationMessage == null) return;
+    setState(() {
+      _validationMessage = null;
+    });
   }
 
   void _cancelTransfer() {
     ref.read(transactionProvider.notifier).reset();
-    context.goNamed('dashboard');
+    context.goNamed(dashboardRouteName);
+  }
+
+  void _updateSendCurrency(Currency currency) {
+    setState(() {
+      _draftTransaction = _draftTransaction.copyWith(currency: currency);
+    });
+    ref.read(transactionProvider.notifier).updateCurrency(currency);
+  }
+
+  void _updateRecipientCurrency(Currency currency) {
+    setState(() {
+      _draftTransaction = _draftTransaction.copyWith(
+        recipientCurrency: currency,
+      );
+    });
+    ref.read(transactionProvider.notifier).updateRecipientCurrency(currency);
   }
 
   Widget _buildSectionTitle(String title) {
@@ -176,10 +223,9 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
           _buildCurrencyInput(
             label: 'You Send',
             currency: transaction.currency,
-            amountText: _amountController.text,
+            amount: transaction.amount,
             isEditable: true,
-            onCurrencyChanged: (currency) =>
-                ref.read(transactionProvider.notifier).updateCurrency(currency),
+            onCurrencyChanged: _updateSendCurrency,
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
@@ -188,11 +234,9 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
           _buildCurrencyInput(
             label: 'Recipient Gets',
             currency: transaction.recipientCurrency,
-            amountText: recipientAmount.toStringAsFixed(2),
+            amount: recipientAmount,
             isEditable: false,
-            onCurrencyChanged: (currency) => ref
-                .read(transactionProvider.notifier)
-                .updateRecipientCurrency(currency),
+            onCurrencyChanged: _updateRecipientCurrency,
           ),
         ],
       ),
@@ -202,7 +246,7 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
   Widget _buildCurrencyInput({
     required String label,
     required Currency currency,
-    required String amountText,
+    required double amount,
     required bool isEditable,
     required ValueChanged<Currency> onCurrencyChanged,
   }) {
@@ -222,21 +266,29 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
               const SizedBox(height: 4),
               if (isEditable)
                 TextField(
+                  key: const ValueKey('send_amount_field'),
                   controller: _amountController,
-                  keyboardType: TextInputType.number,
+                  focusNode: _amountFocusNode,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: const [AmountInputFormatter()],
                   decoration: const InputDecoration(
                     border: InputBorder.none,
                     hintText: '0.00',
                     contentPadding: EdgeInsets.zero,
                   ),
+                  onChanged: _syncAmount,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                   ),
                 )
               else
-                Text(
-                  amountText,
+                CurrencyText(
+                  amount: amount,
+                  currencyCode: currency.code,
+                  currencySymbol: currency.symbol,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                 ),
             ],
@@ -267,6 +319,24 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
               onChanged: (value) {
                 if (value != null) onCurrencyChanged(value);
               },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildValidationMessage(String message) {
+    return Row(
+      children: [
+        const Icon(Icons.error_outline, size: 18, color: AppColors.error),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: const TextStyle(
+              color: AppColors.error,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -313,12 +383,21 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
       fromCurrency: transaction.currency.code,
       toCurrency: transaction.recipientCurrency.code,
     );
-    final sendingText =
-        '${transaction.amount.toStringAsFixed(2)} ${transaction.currency.code}';
-    final recipientText =
-        '${recipientAmount.toStringAsFixed(2)} ${transaction.recipientCurrency.code}';
-    final totalText =
-        '${transaction.totalToPay.toStringAsFixed(2)} ${transaction.currency.code}';
+    final sendingText = CurrencyFormatter.format(
+      amount: transaction.amount,
+      code: transaction.currency.code,
+      symbol: transaction.currency.symbol,
+    );
+    final recipientText = CurrencyFormatter.format(
+      amount: recipientAmount,
+      code: transaction.recipientCurrency.code,
+      symbol: transaction.recipientCurrency.symbol,
+    );
+    final feeText = CurrencyFormatter.format(
+      amount: transaction.fee,
+      code: transaction.currency.code,
+      symbol: transaction.currency.symbol,
+    );
 
     return Column(
       children: [
@@ -338,11 +417,7 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
               const SizedBox(height: 24),
               _buildSummaryItem('Sending', sendingText),
               _buildSummaryItem('Recipient Gets', recipientText),
-              _buildSummaryItem(
-                'Fees',
-                '${transaction.fee.toStringAsFixed(2)} ${transaction.currency.code} (Promo)',
-                isPromo: true,
-              ),
+              _buildSummaryItem('Fees', '$feeText (Promo)', isPromo: true),
               _buildSummaryItem('Estimated Arrival', 'Today, ~15 mins'),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.0),
@@ -357,8 +432,10 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                totalText,
+              CurrencyText(
+                amount: transaction.totalToPay,
+                currencyCode: transaction.currency.code,
+                currencySymbol: transaction.currency.symbol,
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.w700,
@@ -445,6 +522,7 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
       ),
       child: ElevatedButton(
         onPressed: () {
+          ref.read(transactionProvider.notifier).updateAmount(_enteredAmount);
           ref
               .read(transactionProvider.notifier)
               .updateRecipient(
@@ -458,7 +536,21 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
               .read(transactionProvider.notifier)
               .proceedToPaymentMethod();
           if (canProceed) {
-            context.goNamed('payment_method');
+            context.goNamed(paymentMethodRouteName);
+          } else {
+            final state = ref.read(transactionProvider).requireValue;
+            final message = state is TransactionError
+                ? state.message
+                : 'Please check the transfer details.';
+            setState(() {
+              _validationMessage = message;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: AppColors.error,
+              ),
+            );
           }
         },
         style: ElevatedButton.styleFrom(

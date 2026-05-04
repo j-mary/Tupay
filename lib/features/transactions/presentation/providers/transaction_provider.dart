@@ -90,7 +90,7 @@ sealed class TransactionState {
   static Transaction _emptyTransaction() {
     return Transaction(
       amount: 0.0,
-      currency: Currency.usd,
+      currency: Currency.ngn,
       recipient: const Recipient.empty(),
     );
   }

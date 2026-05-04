@@ -8,31 +8,36 @@ import '../../features/transactions/presentation/providers/transaction_provider.
 import '../../features/transactions/presentation/screens/transfer_config_screen.dart';
 import '../../features/transactions/presentation/screens/transfer_summary_screen.dart';
 
+const dashboardRouteName = 'dashboard';
+const transferConfigRouteName = 'transfer_config';
+const paymentMethodRouteName = 'payment_method';
+const transferReviewRouteName = 'transfer_review';
+
 /// [GoRouter] instance.
 final routerProvider = Provider<GoRouter>((ref) {
-  final restoredTransaction = ref.watch(transactionProvider).requireValue;
+  final restoredTransaction = ref.read(transactionProvider).requireValue;
 
   return GoRouter(
     initialLocation: restoredTransaction.routePath,
     routes: [
       GoRoute(
-        path: '/',
-        name: 'dashboard',
+        path: dashboardRoute,
+        name: dashboardRouteName,
         builder: (context, state) => const DashboardScreen(),
       ),
       GoRoute(
-        path: '/transfer',
-        name: 'transfer_config',
+        path: transferConfigRoute,
+        name: transferConfigRouteName,
         builder: (context, state) => const TransferConfigScreen(),
         routes: [
           GoRoute(
-            path: 'payment',
-            name: 'payment_method',
+            path: transferPaymentRoute.path,
+            name: paymentMethodRouteName,
             builder: (context, state) => const PaymentMethodScreen(),
           ),
           GoRoute(
-            path: 'review',
-            name: 'transfer_review',
+            path: transferReviewRoute.path,
+            name: transferReviewRouteName,
             builder: (context, state) => const TransferSummaryScreen(),
           ),
         ],
@@ -43,3 +48,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     ),
   );
 });
+
+extension RoutePathSegment on String {
+  String get path {
+    if (this == dashboardRoute) return this;
+    return split('/').where((segment) => segment.isNotEmpty).last;
+  }
+}

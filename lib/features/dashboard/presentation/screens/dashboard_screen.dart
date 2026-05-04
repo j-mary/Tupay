@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
+import '../../../../core/navigation/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/currency_text.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
+import '../../domain/models/transaction.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/dashboard_state.dart';
 import '../widgets/total_balance_card.dart';
@@ -78,157 +82,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      body: asyncState.isLoading || state is DashboardLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state is DashboardError
+      body: state is DashboardError
           ? Center(child: Text('Error: ${state.errorMessage}'))
-          : state is DashboardLoaded
-          ? RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(dashboardProvider.notifier).fetchDashboardData(),
-              child: CustomScrollView(
-                slivers: [
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: TotalBalanceCardDelegate(
-                      totalBalance: state.totalBalance,
-                      onAddFunds: () {},
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildQuickAction(
-                            context,
-                            'Fund',
-                            Icons.add,
-                            AppColors.actionFundBg,
-                            () {},
-                          ),
-                          _buildQuickAction(
-                            context,
-                            'Pay',
-                            Icons.payment,
-                            AppColors.actionPayBg,
-                            () {
-                              ref
-                                  .read(transactionProvider.notifier)
-                                  .beginTransfer();
-                              context.goNamed('transfer_config');
-                            },
-                          ),
-                          _buildQuickAction(
-                            context,
-                            'Swap',
-                            Icons.swap_horiz,
-                            AppColors.actionSwapBg,
-                            () {},
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-                      child: Text('Wallets', style: theme.textTheme.titleLarge),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 120,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: const [
-                          _WalletCard(
-                            flag: '🇺🇸',
-                            currencyCode: 'USD',
-                            amount: '\$12,450',
-                            country: 'UNITED STATES',
-                          ),
-                          _WalletCard(
-                            flag: '🇨🇦',
-                            currencyCode: 'CAD',
-                            amount: 'C\$4,200',
-                            country: 'CANADA',
-                          ),
-                          _WalletCard(
-                            flag: '🇦🇺',
-                            currencyCode: 'AUD',
-                            amount: 'A\$3,150',
-                            country: 'AUSTRALIA',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Recent Transactions',
-                            style: theme.textTheme.titleLarge,
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.successPrimary,
-                            ),
-                            child: const Text('See all'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final tx = state.recentTransactions[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.backgroundWhite,
-                          child: Icon(
-                            tx.isCredit
-                                ? Icons.arrow_downward
-                                : Icons.arrow_upward,
-                            color: tx.isCredit
-                                ? AppColors.successPrimary
-                                : Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                        title: Text(
-                          tx.title,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        trailing: Text(
-                          '${tx.isCredit ? '+' : '-'} \$${tx.amount.toStringAsFixed(2)}',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: tx.isCredit
-                                ? AppColors.successPrimary
-                                : AppColors.textDark,
-                          ),
-                        ),
-                      );
-                    }, childCount: state.recentTransactions.length),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
-                ],
+          : Skeletonizer(
+              enabled:
+                  asyncState.isLoading ||
+                  state is DashboardLoading ||
+                  state == null,
+              child: _DashboardContent(
+                state: state is DashboardLoaded ? state : _skeletonDashboard,
+                onRefresh: () =>
+                    ref.read(dashboardProvider.notifier).fetchDashboardData(),
+                onPay: () {
+                  ref.read(transactionProvider.notifier).beginTransfer();
+                  context.goNamed(transferConfigRouteName);
+                },
               ),
-            )
-          : const SizedBox.shrink(),
+            ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -263,13 +133,206 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildQuickAction(
-    BuildContext context,
-    String label,
-    IconData icon,
-    Color bgColor,
-    VoidCallback onTap,
-  ) {
+  static final _skeletonDashboard = DashboardLoaded(
+    totalBalance: 12543.21,
+    recentTransactions: List.generate(
+      6,
+      (index) => Transaction(
+        id: 'TX-$index',
+        title: 'Transaction TX-00000$index',
+        amount: 2400 + index * 120,
+        date: DateTime.now(),
+        isCredit: index.isEven,
+      ),
+    ),
+  );
+}
+
+class _DashboardContent extends StatelessWidget {
+  final DashboardLoaded state;
+  final Future<void> Function() onRefresh;
+  final VoidCallback onPay;
+
+  const _DashboardContent({
+    required this.state,
+    required this.onRefresh,
+    required this.onPay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: CustomScrollView(
+        slivers: [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: TotalBalanceCardDelegate(
+              totalBalance: state.totalBalance,
+              onAddFunds: () {},
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _QuickAction(
+                    label: 'Fund',
+                    icon: Icon(Icons.add, color: AppColors.textDark),
+                    bgColor: AppColors.actionFundBg,
+                    onTap: () {},
+                  ),
+                  _QuickAction(
+                    label: 'Pay',
+                    icon: Image.asset(
+                      'assets/png/pay_icon.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                    bgColor: AppColors.actionPayBg,
+                    onTap: onPay,
+                  ),
+                  _QuickAction(
+                    label: 'Swap',
+                    icon: Icon(Icons.swap_horiz, color: AppColors.textDark),
+                    bgColor: AppColors.actionSwapBg,
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Text('Wallets', style: theme.textTheme.titleLarge),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 132,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: const [
+                  _WalletCard(
+                    flag: '🇳🇬',
+                    currencyCode: 'NGN',
+                    amount: 1850000,
+                    country: 'NIGERIA',
+                  ),
+                  _WalletCard(
+                    flag: '🇨🇳',
+                    currencyCode: 'RMB',
+                    amount: 31500,
+                    country: 'CHINA',
+                  ),
+                  _WalletCard(
+                    flag: '🇺🇸',
+                    currencyCode: 'USD',
+                    amount: 12450,
+                    country: 'UNITED STATES',
+                  ),
+                  _WalletCard(
+                    flag: '🇪🇺',
+                    currencyCode: 'EUR',
+                    amount: 8700,
+                    country: 'EUROPE',
+                  ),
+                  _WalletCard(
+                    flag: '🇬🇧',
+                    currencyCode: 'GBP',
+                    amount: 4200,
+                    country: 'UNITED KINGDOM',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Transactions',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.successPrimary,
+                    ),
+                    child: const Text('See all'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final tx = state.recentTransactions[index];
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.backgroundWhite,
+                  child: Icon(
+                    tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                    color: tx.isCredit
+                        ? AppColors.successPrimary
+                        : Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                title: Text(
+                  tx.title,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  '${tx.date.day}/${tx.date.month}/${tx.date.year}',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                trailing: CurrencyText(
+                  amount: tx.isCredit ? tx.amount : -tx.amount,
+                  currencyCode: 'USD',
+                  showSign: true,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: tx.isCredit
+                        ? AppColors.successPrimary
+                        : AppColors.textDark,
+                  ),
+                ),
+              );
+            }, childCount: state.recentTransactions.length),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final String label;
+  final Widget icon;
+  final Color bgColor;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.label,
+    required this.icon,
+    required this.bgColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -277,7 +340,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-            child: Icon(icon, color: AppColors.textDark),
+            child: icon,
           ),
           const SizedBox(height: 8),
           Text(label, style: Theme.of(context).textTheme.labelMedium),
@@ -290,7 +353,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 class _WalletCard extends StatelessWidget {
   final String flag;
   final String currencyCode;
-  final String amount;
+  final double amount;
   final String country;
 
   const _WalletCard({
@@ -304,9 +367,9 @@ class _WalletCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
-      padding: const EdgeInsets.all(20),
+      width: 214,
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(12),
@@ -335,10 +398,12 @@ class _WalletCard extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          Text(
-            amount,
+          CurrencyText(
+            amount: amount,
+            currencyCode: currencyCode,
             style: theme.textTheme.titleLarge?.copyWith(
               color: AppColors.textHeading,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),

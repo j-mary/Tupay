@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tupay_app/core/navigation/app_router.dart';
 import 'package:tupay_app/core/theme/app_colors.dart';
 import 'package:tupay_app/core/utils/currency_converter.dart';
+import 'package:tupay_app/core/utils/currency_formatter.dart';
+import 'package:tupay_app/core/widgets/currency_text.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:tupay_app/features/transactions/presentation/widgets/jagged_receipt_edge.dart';
 import 'package:tupay_app/features/transactions/presentation/widgets/stepper_component.dart';
@@ -49,7 +52,7 @@ class TransferSummaryScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             ref.read(transactionProvider.notifier).backToPaymentMethod();
-            context.goNamed('payment_method');
+            context.goNamed(paymentMethodRouteName);
           },
         ),
         actions: [
@@ -57,7 +60,7 @@ class TransferSummaryScreen extends ConsumerWidget {
             icon: const Icon(Icons.close),
             onPressed: () {
               ref.read(transactionProvider.notifier).reset();
-              context.goNamed('dashboard');
+              context.goNamed(dashboardRouteName);
             },
           ),
         ],
@@ -74,6 +77,7 @@ class TransferSummaryScreen extends ConsumerWidget {
             ),
             Expanded(
               child: ListView(
+                key: const PageStorageKey('transfer_review_scroll'),
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 children: [
                   _buildSectionTitle('RECIPIENT'),
@@ -168,6 +172,20 @@ class TransferSummaryScreen extends ConsumerWidget {
       fromCurrency: transaction.currency.code,
       toCurrency: transaction.recipientCurrency.code,
     );
+    final sourceUnit = CurrencyFormatter.format(
+      amount: 1,
+      code: transaction.currency.code,
+      symbol: transaction.currency.symbol,
+    );
+    final targetUnit = CurrencyFormatter.format(
+      amount: CurrencyConverter.convert(
+        amount: 1,
+        fromCurrency: transaction.currency.code,
+        toCurrency: transaction.recipientCurrency.code,
+      ),
+      code: transaction.recipientCurrency.code,
+      symbol: transaction.recipientCurrency.symbol,
+    );
     return Column(
       children: [
         const JaggedReceiptEdge(color: cardColor, isTop: true),
@@ -188,19 +206,28 @@ class TransferSummaryScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               _buildSummaryItem(
                 'Sending Amount',
-                '${transaction.amount.toStringAsFixed(2)} ${transaction.currency.code}',
+                CurrencyFormatter.format(
+                  amount: transaction.amount,
+                  code: transaction.currency.code,
+                  symbol: transaction.currency.symbol,
+                ),
               ),
-              _buildSummaryItem(
-                'Exchange Rate',
-                '1 ${transaction.currency.code} = ${CurrencyConverter.convert(amount: 1, fromCurrency: transaction.currency.code, toCurrency: transaction.recipientCurrency.code).toStringAsFixed(2)} ${transaction.recipientCurrency.code}',
-              ),
+              _buildSummaryItem('Exchange Rate', '$sourceUnit = $targetUnit'),
               _buildSummaryItem(
                 'Recipient Gets',
-                '${recipientAmount.toStringAsFixed(2)} ${transaction.recipientCurrency.code}',
+                CurrencyFormatter.format(
+                  amount: recipientAmount,
+                  code: transaction.recipientCurrency.code,
+                  symbol: transaction.recipientCurrency.symbol,
+                ),
               ),
               _buildSummaryItem(
                 'Fees',
-                '${transaction.fee.toStringAsFixed(2)} ${transaction.currency.code}',
+                CurrencyFormatter.format(
+                  amount: transaction.fee,
+                  code: transaction.currency.code,
+                  symbol: transaction.currency.symbol,
+                ),
                 isPromo: transaction.fee == 0,
               ),
               const Padding(
@@ -218,8 +245,10 @@ class TransferSummaryScreen extends ConsumerWidget {
                       letterSpacing: 1.6,
                     ),
                   ),
-                  Text(
-                    '${transaction.totalToPay.toStringAsFixed(2)} ${transaction.currency.code}',
+                  CurrencyText(
+                    amount: transaction.totalToPay,
+                    currencyCode: transaction.currency.code,
+                    currencySymbol: transaction.currency.symbol,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -340,7 +369,7 @@ class TransferSummaryScreen extends ConsumerWidget {
             ElevatedButton(
               onPressed: () {
                 ref.read(transactionProvider.notifier).reset();
-                context.goNamed('dashboard');
+                context.goNamed(dashboardRouteName);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.successPrimary,

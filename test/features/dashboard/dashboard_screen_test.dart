@@ -6,23 +6,10 @@ import 'package:tupay_app/features/dashboard/domain/models/transaction.dart';
 import 'package:tupay_app/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:tupay_app/features/dashboard/presentation/providers/dashboard_state.dart';
 import 'package:tupay_app/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:flutter/services.dart';
-import 'dart:io';
 
 void main() {
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized();
-    HttpOverrides.global = null;
-    const MethodChannel channel = MethodChannel(
-      'plugins.flutter.io/path_provider',
-    );
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
-          if (methodCall.method == 'getApplicationSupportDirectory') {
-            return '.';
-          }
-          return null;
-        });
   });
 
   testWidgets('Dashboard Screen Golden Test', (WidgetTester tester) async {
@@ -63,7 +50,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Tupay'), findsOneWidget);
-    expect(find.text('\$5000.00', skipOffstage: false), findsOneWidget);
+    expect(find.text('\$5,000.00', skipOffstage: false), findsOneWidget);
     expect(find.text('Mock Transaction', skipOffstage: false), findsOneWidget);
 
     await expectLater(

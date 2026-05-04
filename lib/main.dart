@@ -18,9 +18,11 @@ class TupayApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final restoredTransaction = ref.watch(transactionProvider);
+    final isRestoringTransaction = ref.watch(
+      transactionProvider.select((state) => state.isLoading && !state.hasValue),
+    );
 
-    if (restoredTransaction.isLoading && !restoredTransaction.hasValue) {
+    if (isRestoringTransaction) {
       return MaterialApp(
         title: 'Tupay',
         debugShowCheckedModeBanner: false,

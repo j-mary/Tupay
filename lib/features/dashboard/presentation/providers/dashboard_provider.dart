@@ -20,7 +20,7 @@ class DashboardNotifier extends AsyncNotifier<DashboardState> {
       final parsedTransactions =
           await TransactionParser.parseLargeJsonBackground(mockJson);
 
-      final today = DateTime(2026, 5, 4);
+      final today = DateTime.now();
       final recentTransactions = parsedTransactions
           .map((parsed) {
             return Transaction(

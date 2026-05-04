@@ -8,6 +8,7 @@ class Currency {
   static const usd = Currency(code: 'USD', symbol: '\$');
   static const eur = Currency(code: 'EUR', symbol: '€');
   static const gbp = Currency(code: 'GBP', symbol: '£');
+  static const ngn = Currency(code: 'NGN', symbol: '₦');
   static const rmb = Currency(code: 'RMB', symbol: '¥');
 
   Map<String, dynamic> toJson() => {'code': code, 'symbol': symbol};
@@ -18,6 +19,7 @@ class Currency {
       'USD' => Currency.usd,
       'EUR' => Currency.eur,
       'GBP' => Currency.gbp,
+      'NGN' => Currency.ngn,
       'RMB' => Currency.rmb,
       _ => Currency(code: code, symbol: json['symbol'] as String),
     };
@@ -77,7 +79,7 @@ class Transaction {
   const Transaction({
     required this.amount,
     required this.currency,
-    this.recipientCurrency = Currency.eur,
+    this.recipientCurrency = Currency.rmb,
     required this.recipient,
     this.paymentMethod,
     this.fee = 0.0,
