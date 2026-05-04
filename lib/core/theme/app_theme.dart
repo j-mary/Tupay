@@ -47,6 +47,11 @@ class AppTheme {
           fontWeight: FontWeight.w400,
           color: AppColors.textGrey,
         ),
+        labelMedium: GoogleFonts.publicSans(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textDark,
+        ),
         labelSmall: GoogleFonts.publicSans(
           fontSize: 10,
           fontWeight: FontWeight.w700,

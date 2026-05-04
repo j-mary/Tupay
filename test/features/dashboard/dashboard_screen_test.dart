@@ -6,10 +6,23 @@ import 'package:tupay_app/features/dashboard/domain/models/transaction.dart';
 import 'package:tupay_app/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:tupay_app/features/dashboard/presentation/providers/dashboard_state.dart';
 import 'package:tupay_app/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:flutter/services.dart';
+import 'dart:io';
 
 void main() {
+  setUp(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    HttpOverrides.global = null;
+    const MethodChannel channel = MethodChannel('plugins.flutter.io/path_provider');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      if (methodCall.method == 'getApplicationSupportDirectory') {
+        return '.';
+      }
+      return null;
+    });
+  });
+
   testWidgets('Dashboard Screen Golden Test', (WidgetTester tester) async {
-    // Provide a mocked state to the dashboard provider
     final mockTransactions = [
       Transaction(
         id: '1',
@@ -20,32 +33,40 @@ void main() {
       ),
     ];
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dashboardProvider.overrideWith(
-            () => MockDashboardNotifier(
-              DashboardLoaded(
-                totalBalance: 5000.0,
-                recentTransactions: mockTransactions,
+    await tester.runAsync(() async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            dashboardProvider.overrideWith(
+              () => MockDashboardNotifier(
+                DashboardLoaded(
+                  totalBalance: 5000.0,
+                  recentTransactions: mockTransactions,
+                ),
               ),
             ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: const DashboardScreen(),
           ),
-        ],
-        child: MaterialApp(
-          theme: AppTheme.lightTheme,
-          home: const DashboardScreen(),
         ),
-      ),
-    );
+      );
 
-    // Wait for everything to settle
+      await tester.pumpAndSettle();
+      await Future.delayed(const Duration(seconds: 2));
+    });
+
     await tester.pumpAndSettle();
 
-    // Verify UI elements exist
     expect(find.text('Dashboard'), findsOneWidget);
-    expect(find.text('\$5000.00'), findsOneWidget);
-    expect(find.text('Mock Transaction'), findsOneWidget);
+    expect(find.text('\$5000.00', skipOffstage: false), findsOneWidget);
+    expect(find.text('Mock Transaction', skipOffstage: false), findsOneWidget);
+
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/dashboard_screen.png'),
+    );
   });
 }
 
@@ -57,7 +78,5 @@ class MockDashboardNotifier extends DashboardNotifier {
   DashboardState build() => mockState;
 
   @override
-  Future<void> fetchDashboardData() async {
-    // Do nothing for mock
-  }
+  Future<void> fetchDashboardData() async {}
 }

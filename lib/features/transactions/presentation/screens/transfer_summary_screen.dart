@@ -157,17 +157,17 @@ class TransferSummaryScreen extends ConsumerWidget {
                 'Sending Amount',
                 '${transaction.amount.toStringAsFixed(2)} ${transaction.currency.code}',
               ),
-              _buildSummaryItem('Exchange Rate', '1 USD = 0.9245 EUR'),
-              _buildSummaryItem('Recipient Gets', '924.50 EUR'),
-              _buildSummaryItem('Fees', '0.00 USD', isPromo: true),
+              _buildSummaryItem('Exchange Rate', '1 ${transaction.currency.code} = 1.00 ${transaction.currency.code}'),
+              _buildSummaryItem('Recipient Gets', '${transaction.amount.toStringAsFixed(2)} ${transaction.currency.code}'),
+              _buildSummaryItem('Fees', '${transaction.fee.toStringAsFixed(2)} ${transaction.currency.code}', isPromo: transaction.fee == 0),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20.0),
                 child: Divider(color: Color(0xFF3F465C)),
               ),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'TOTAL TO PAY',
                     style: TextStyle(
                       fontSize: 14,
@@ -176,8 +176,8 @@ class TransferSummaryScreen extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '1,000.00 USD',
-                    style: TextStyle(
+                    '${transaction.totalToPay.toStringAsFixed(2)} ${transaction.currency.code}',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,

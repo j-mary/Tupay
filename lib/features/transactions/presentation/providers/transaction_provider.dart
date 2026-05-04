@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tupay_app/core/security/secure_storage_service.dart';
@@ -8,6 +9,39 @@ sealed class TransactionState {
   final Transaction transaction;
 
   const TransactionState(this.transaction);
+
+  Map<String, dynamic> toJson() {
+    return {
+      'type': runtimeType.toString(),
+      'transaction': transaction.toJson(),
+    };
+  }
+
+  static TransactionState? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    final type = json['type'];
+    final txJson = json['transaction'];
+    if (txJson == null) return null;
+    final transaction = Transaction.fromJson(Map<String, dynamic>.from(txJson));
+
+    switch (type) {
+      case 'TransactionConfiguring':
+        return TransactionConfiguring(transaction);
+      case 'TransactionSelectingPaymentMethod':
+        return TransactionSelectingPaymentMethod(transaction);
+      case 'TransactionReviewing':
+        return TransactionReviewing(transaction);
+      case 'TransactionProcessing':
+        return TransactionProcessing(transaction);
+      case 'TransactionSuccess':
+        return TransactionSuccess(transaction);
+      case 'TransactionError':
+        final message = json['message'] as String? ?? 'Unknown error';
+        return TransactionError(transaction, message);
+      default:
+        return null;
+    }
+  }
 }
 
 /// Initial state where the user configures the amount and recipient.
@@ -39,6 +73,13 @@ class TransactionSuccess extends TransactionState {
 class TransactionError extends TransactionState {
   final String message;
   const TransactionError(super.transaction, this.message);
+
+  @override
+  Map<String, dynamic> toJson() {
+    final data = super.toJson();
+    data['message'] = message;
+    return data;
+  }
 }
 
 /// Notifier to manage the transaction flow state.
@@ -49,6 +90,9 @@ class TransactionNotifier extends Notifier<TransactionState> {
 
   @override
   TransactionState build() {
+    // Attempt to load persisted state on init
+    Future.microtask(_loadState);
+
     return TransactionConfiguring(
       Transaction(
         amount: 0.0,
@@ -56,6 +100,36 @@ class TransactionNotifier extends Notifier<TransactionState> {
         recipient: const Recipient.empty(),
       ),
     );
+  }
+
+  @override
+  set state(TransactionState value) {
+    super.state = value;
+    _persistState(value);
+  }
+
+  Future<void> _loadState() async {
+    try {
+      final stateStr = await _secureStorage.getTransactionState();
+      if (stateStr != null) {
+        final json = jsonDecode(stateStr);
+        final restoredState = TransactionState.fromJson(json);
+        if (restoredState != null) {
+          state = restoredState;
+        }
+      }
+    } catch (_) {
+      // Ignore parse errors, fallback to default
+    }
+  }
+
+  Future<void> _persistState(TransactionState currentState) async {
+    try {
+      final jsonStr = jsonEncode(currentState.toJson());
+      await _secureStorage.saveTransactionState(jsonStr);
+    } catch (_) {
+      // Best effort saving
+    }
   }
 
   void updateAmount(double amount) {
@@ -109,8 +183,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
       // Simulate network delay for a real-world feel
       await Future.delayed(const Duration(seconds: 2));
       
-      // Persist transaction ID to secure platform storage (Phase 3 Requirement).
-      // On iOS this writes to the Keychain; on Android to the Keystore.
+      // Persist transaction ID to secure platform storage
       final txId = 'TX-${DateTime.now().millisecondsSinceEpoch}';
       await _secureStorage.saveTransactionId(txId);
       
@@ -128,6 +201,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
         recipient: const Recipient.empty(),
       ),
     );
+    _secureStorage.clearTransactionState();
   }
 }
 

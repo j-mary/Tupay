@@ -12,6 +12,18 @@ class Currency {
   static const eur = Currency(code: 'EUR', symbol: '€');
   static const gbp = Currency(code: 'GBP', symbol: '£');
   static const rmb = Currency(code: 'RMB', symbol: '¥');
+
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'symbol': symbol,
+      };
+
+  factory Currency.fromJson(Map<String, dynamic> json) {
+    return Currency(
+      code: json['code'] as String,
+      symbol: json['symbol'] as String,
+    );
+  }
 }
 
 /// Represents the recipient of a transaction.
@@ -32,6 +44,20 @@ class Recipient {
         bankName = null;
 
   bool get isEmpty => fullName.isEmpty && accountNumber.isEmpty;
+
+  Map<String, dynamic> toJson() => {
+        'fullName': fullName,
+        'accountNumber': accountNumber,
+        'bankName': bankName,
+      };
+
+  factory Recipient.fromJson(Map<String, dynamic> json) {
+    return Recipient(
+      fullName: json['fullName'] as String? ?? '',
+      accountNumber: json['accountNumber'] as String? ?? '',
+      bankName: json['bankName'] as String?,
+    );
+  }
 }
 
 /// Represents a transaction in progress.
@@ -71,4 +97,30 @@ class Transaction {
   }
 
   double get totalToPay => amount + fee;
+
+  Map<String, dynamic> toJson() => {
+        'amount': amount,
+        'currency': currency.toJson(),
+        'recipient': recipient.toJson(),
+        'paymentMethod': paymentMethod,
+        'fee': fee,
+        'estimatedArrival': estimatedArrival?.toIso8601String(),
+      };
+
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency'] != null
+          ? Currency.fromJson(Map<String, dynamic>.from(json['currency']))
+          : Currency.usd,
+      recipient: json['recipient'] != null
+          ? Recipient.fromJson(Map<String, dynamic>.from(json['recipient']))
+          : const Recipient.empty(),
+      paymentMethod: json['paymentMethod'] as String?,
+      fee: (json['fee'] as num?)?.toDouble() ?? 0.0,
+      estimatedArrival: json['estimatedArrival'] != null
+          ? DateTime.tryParse(json['estimatedArrival'] as String)
+          : null,
+    );
+  }
 }

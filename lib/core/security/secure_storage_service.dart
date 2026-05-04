@@ -24,4 +24,21 @@ class SecureStorageService {
   Future<void> clearTransactionId() async {
     await _storage.delete(key: _transactionIdKey);
   }
+
+  static const String _transactionStateKey = 'transaction_state';
+
+  /// Saves the serialized transaction state securely.
+  Future<void> saveTransactionState(String stateJson) async {
+    await _storage.write(key: _transactionStateKey, value: stateJson);
+  }
+
+  /// Retrieves the saved transaction state securely.
+  Future<String?> getTransactionState() async {
+    return await _storage.read(key: _transactionStateKey);
+  }
+
+  /// Clears the saved transaction state.
+  Future<void> clearTransactionState() async {
+    await _storage.delete(key: _transactionStateKey);
+  }
 }
