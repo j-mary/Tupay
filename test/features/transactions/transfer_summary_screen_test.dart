@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tupay_app/core/theme/app_theme.dart';
 import 'package:tupay_app/features/transactions/domain/entities/transaction.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
@@ -27,6 +28,34 @@ void main() {
       fee: 2.50,
       estimatedArrival: DateTime(2026, 5, 5),
     );
+    final router = GoRouter(
+      initialLocation: '/transfer/review',
+      routes: [
+        GoRoute(
+          path: '/',
+          name: 'dashboard',
+          builder: (context, state) => const Scaffold(body: Text('Dashboard')),
+        ),
+        GoRoute(
+          path: '/transfer',
+          name: 'transfer_config',
+          builder: (context, state) => const Scaffold(body: Text('Config')),
+          routes: [
+            GoRoute(
+              path: 'payment',
+              name: 'payment_method',
+              builder: (context, state) =>
+                  const Scaffold(body: Text('Payment')),
+            ),
+            GoRoute(
+              path: 'review',
+              name: 'transfer_review',
+              builder: (context, state) => const TransferSummaryScreen(),
+            ),
+          ],
+        ),
+      ],
+    );
 
     await tester.runAsync(() async {
       await tester.pumpWidget(
@@ -36,9 +65,9 @@ void main() {
               () => MockTransactionNotifier(TransactionReviewing(mockTx)),
             ),
           ],
-          child: MaterialApp(
+          child: MaterialApp.router(
             theme: AppTheme.lightTheme,
-            home: const TransferSummaryScreen(),
+            routerConfig: router,
           ),
         ),
       );
@@ -79,9 +108,38 @@ void main() {
             () => MockTransactionNotifier(TransactionReviewing(mockTx)),
           ),
         ],
-        child: MaterialApp(
+        child: MaterialApp.router(
           theme: AppTheme.lightTheme,
-          home: const TransferSummaryScreen(),
+          routerConfig: GoRouter(
+            initialLocation: '/transfer/review',
+            routes: [
+              GoRoute(
+                path: '/',
+                name: 'dashboard',
+                builder: (context, state) =>
+                    const Scaffold(body: Text('Dashboard')),
+              ),
+              GoRoute(
+                path: '/transfer',
+                name: 'transfer_config',
+                builder: (context, state) =>
+                    const Scaffold(body: Text('Config')),
+                routes: [
+                  GoRoute(
+                    path: 'payment',
+                    name: 'payment_method',
+                    builder: (context, state) =>
+                        const Scaffold(body: Text('Payment')),
+                  ),
+                  GoRoute(
+                    path: 'review',
+                    name: 'transfer_review',
+                    builder: (context, state) => const TransferSummaryScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -95,6 +153,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Transfer Successful!'), findsOneWidget);
+
+    await tester.tap(find.text('BACK TO HOME'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dashboard'), findsOneWidget);
   });
 }
 
@@ -112,4 +175,7 @@ class MockTransactionNotifier extends TransactionNotifier {
     await Future<void>.delayed(const Duration(milliseconds: 10));
     state = AsyncData(TransactionSuccess(transaction));
   }
+
+  @override
+  void reset() {}
 }

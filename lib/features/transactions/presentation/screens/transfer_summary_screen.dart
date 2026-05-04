@@ -59,8 +59,10 @@ class TransferSummaryScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
-              ref.read(transactionProvider.notifier).reset();
               context.goNamed(dashboardRouteName);
+              Future.microtask(
+                () => ref.read(transactionProvider.notifier).reset(),
+              );
             },
           ),
         ],
@@ -343,7 +345,7 @@ class TransferSummaryScreen extends ConsumerWidget {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -368,8 +370,11 @@ class TransferSummaryScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                ref.read(transactionProvider.notifier).reset();
+                Navigator.of(dialogContext, rootNavigator: true).pop();
                 context.goNamed(dashboardRouteName);
+                Future.microtask(
+                  () => ref.read(transactionProvider.notifier).reset(),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.successPrimary,

@@ -21,6 +21,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _currentIndex = 0;
+  bool _isBalanceHidden = false;
 
   @override
   void initState() {
@@ -91,6 +92,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   state == null,
               child: _DashboardContent(
                 state: state is DashboardLoaded ? state : _skeletonDashboard,
+                isBalanceHidden: _isBalanceHidden,
+                onToggleBalanceVisibility: () {
+                  setState(() {
+                    _isBalanceHidden = !_isBalanceHidden;
+                  });
+                },
                 onRefresh: () =>
                     ref.read(dashboardProvider.notifier).fetchDashboardData(),
                 onPay: () {
@@ -153,11 +160,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
 class _DashboardContent extends StatelessWidget {
   final DashboardLoaded state;
+  final bool isBalanceHidden;
+  final VoidCallback onToggleBalanceVisibility;
   final Future<void> Function() onRefresh;
   final VoidCallback onPay;
 
   const _DashboardContent({
     required this.state,
+    required this.isBalanceHidden,
+    required this.onToggleBalanceVisibility,
     required this.onRefresh,
     required this.onPay,
   });
@@ -174,7 +185,9 @@ class _DashboardContent extends StatelessWidget {
             pinned: true,
             delegate: TotalBalanceCardDelegate(
               totalBalance: state.totalBalance,
+              isBalanceHidden: isBalanceHidden,
               onAddFunds: () {},
+              onToggleBalanceVisibility: onToggleBalanceVisibility,
             ),
           ),
           SliverToBoxAdapter(
@@ -221,36 +234,41 @@ class _DashboardContent extends StatelessWidget {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: const [
+                children: [
                   _WalletCard(
                     flag: '🇳🇬',
                     currencyCode: 'NGN',
                     amount: 1850000,
                     country: 'NIGERIA',
+                    isBalanceHidden: isBalanceHidden,
                   ),
                   _WalletCard(
                     flag: '🇨🇳',
                     currencyCode: 'RMB',
                     amount: 31500,
                     country: 'CHINA',
+                    isBalanceHidden: isBalanceHidden,
                   ),
                   _WalletCard(
                     flag: '🇺🇸',
                     currencyCode: 'USD',
                     amount: 12450,
                     country: 'UNITED STATES',
+                    isBalanceHidden: isBalanceHidden,
                   ),
                   _WalletCard(
                     flag: '🇪🇺',
                     currencyCode: 'EUR',
                     amount: 8700,
                     country: 'EUROPE',
+                    isBalanceHidden: isBalanceHidden,
                   ),
                   _WalletCard(
                     flag: '🇬🇧',
                     currencyCode: 'GBP',
                     amount: 4200,
                     country: 'UNITED KINGDOM',
+                    isBalanceHidden: isBalanceHidden,
                   ),
                 ],
               ),
@@ -280,7 +298,10 @@ class _DashboardContent extends StatelessWidget {
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final tx = state.recentTransactions[index];
-              return _TransactionItem(transaction: tx);
+              return _TransactionItem(
+                transaction: tx,
+                isBalanceHidden: isBalanceHidden,
+              );
             }, childCount: state.recentTransactions.length),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -349,12 +370,14 @@ class _WalletCard extends StatelessWidget {
   final String currencyCode;
   final double amount;
   final String country;
+  final bool isBalanceHidden;
 
   const _WalletCard({
     required this.flag,
     required this.currencyCode,
     required this.amount,
     required this.country,
+    required this.isBalanceHidden,
   });
 
   @override
@@ -404,6 +427,7 @@ class _WalletCard extends StatelessWidget {
           CurrencyText(
             amount: amount,
             currencyCode: currencyCode,
+            isHidden: isBalanceHidden,
             style: theme.textTheme.titleLarge?.copyWith(
               color: AppColors.textHeading,
               fontSize: 18,
@@ -428,8 +452,12 @@ class _WalletCard extends StatelessWidget {
 
 class _TransactionItem extends StatelessWidget {
   final DashboardTransaction transaction;
+  final bool isBalanceHidden;
 
-  const _TransactionItem({required this.transaction});
+  const _TransactionItem({
+    required this.transaction,
+    required this.isBalanceHidden,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -515,6 +543,7 @@ class _TransactionItem extends StatelessWidget {
                     : -transaction.amount,
                 currencyCode: 'USD',
                 showSign: true,
+                isHidden: isBalanceHidden,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: transaction.isCredit
                       ? AppColors.successPrimary

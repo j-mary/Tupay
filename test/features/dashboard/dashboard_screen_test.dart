@@ -61,6 +61,53 @@ void main() {
       matchesGoldenFile('goldens/dashboard_screen.png'),
     );
   });
+
+  testWidgets('dashboard balance toggle hides all amounts', (
+    WidgetTester tester,
+  ) async {
+    final mockTransactions = [
+      DashboardTransaction(
+        id: '1',
+        title: 'Mock Transaction',
+        amount: 100.0,
+        date: DateTime(2026, 5, 4),
+        isCredit: true,
+        category: TransactionCategory.funding,
+        status: TransactionStatus.success,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardProvider.overrideWith(
+            () => MockDashboardNotifier(
+              DashboardLoaded(
+                totalBalance: 5000.0,
+                recentTransactions: mockTransactions,
+                totalProcessedTransactions: 1,
+              ),
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('\$5,000.00', skipOffstage: false), findsOneWidget);
+    expect(find.text('₦1,850,000.00', skipOffstage: false), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Hide balance'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('••••', skipOffstage: false), findsWidgets);
+    expect(find.text('\$5,000.00', skipOffstage: false), findsNothing);
+    expect(find.text('₦1,850,000.00', skipOffstage: false), findsNothing);
+  });
 }
 
 class MockDashboardNotifier extends DashboardNotifier {

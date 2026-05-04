@@ -28,8 +28,10 @@ class PaymentMethodScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
-              ref.read(transactionProvider.notifier).reset();
               context.goNamed(dashboardRouteName);
+              Future.microtask(
+                () => ref.read(transactionProvider.notifier).reset(),
+              );
             },
           ),
         ],

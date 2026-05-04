@@ -7,6 +7,7 @@ class CurrencyText extends StatelessWidget {
   final String currencyCode;
   final String? currencySymbol;
   final bool showSign;
+  final bool isHidden;
   final TextStyle? style;
   final TextAlign? textAlign;
 
@@ -16,12 +17,17 @@ class CurrencyText extends StatelessWidget {
     required this.currencyCode,
     this.currencySymbol,
     this.showSign = false,
+    this.isHidden = false,
     this.style,
     this.textAlign,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (isHidden) {
+      return Text('••••', style: style, textAlign: textAlign);
+    }
+
     return Text(
       CurrencyFormatter.format(
         amount: amount,
