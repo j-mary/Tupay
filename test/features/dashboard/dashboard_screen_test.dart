@@ -53,7 +53,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Tupay'), findsOneWidget);
-    expect(find.text('\$5,000.00', skipOffstage: false), findsOneWidget);
+    expect(find.text('₦5,000.00', skipOffstage: false), findsOneWidget);
     expect(find.text('Mock Transaction', skipOffstage: false), findsOneWidget);
 
     await expectLater(
@@ -98,14 +98,14 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('\$5,000.00', skipOffstage: false), findsOneWidget);
+    expect(find.text('₦5,000.00', skipOffstage: false), findsOneWidget);
     expect(find.text('₦1,850,000.00', skipOffstage: false), findsOneWidget);
 
     await tester.tap(find.byTooltip('Hide balance'));
     await tester.pumpAndSettle();
 
     expect(find.text('••••', skipOffstage: false), findsWidgets);
-    expect(find.text('\$5,000.00', skipOffstage: false), findsNothing);
+    expect(find.text('₦5,000.00', skipOffstage: false), findsNothing);
     expect(find.text('₦1,850,000.00', skipOffstage: false), findsNothing);
   });
 }

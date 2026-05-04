@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tupay_app/features/transactions/domain/entities/transaction.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/currency_text.dart';
@@ -69,7 +70,7 @@ class TotalBalanceCardDelegate extends SliverPersistentHeaderDelegate {
             const SizedBox(height: 8),
             CurrencyText(
               amount: totalBalance,
-              currencyCode: 'USD',
+              currencyCode: Currency.ngn.code,
               isHidden: isBalanceHidden,
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 fontSize: 36,

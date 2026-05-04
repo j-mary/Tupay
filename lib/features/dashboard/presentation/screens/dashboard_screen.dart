@@ -92,36 +92,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 },
               ),
             ),
-      bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: _DashboardBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: AppColors.backgroundWhite,
-        selectedItemColor: AppColors.successPrimary,
-        unselectedItemColor: AppColors.textGrey,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            activeIcon: Icon(Icons.account_balance_wallet),
-            label: 'Wallet',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.swap_horiz_outlined),
-            activeIcon: Icon(Icons.swap_horiz),
-            label: 'Transfer',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -142,6 +115,98 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ),
     totalProcessedTransactions: 0,
   );
+}
+
+class _DashboardBottomNav extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _DashboardBottomNav({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.backgroundWhite,
+        border: Border(top: BorderSide(color: AppColors.fieldFill, width: 1)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _BottomNavItem(
+              label: 'HOME',
+              iconPath: 'assets/png/home_icon.png',
+              isSelected: currentIndex == 0,
+              onTap: () => onTap(0),
+            ),
+            _BottomNavItem(
+              label: 'CARDS',
+              iconPath: 'assets/png/cards_icon.png',
+              isSelected: currentIndex == 1,
+              onTap: () => onTap(1),
+            ),
+            _BottomNavItem(
+              label: 'TRANSFER',
+              iconPath: 'assets/png/transfer_icon.png',
+              isSelected: currentIndex == 2,
+              onTap: () => onTap(2),
+            ),
+            _BottomNavItem(
+              label: 'PROFILE',
+              iconPath: 'assets/png/profile_icon.png',
+              isSelected: currentIndex == 3,
+              onTap: () => onTap(3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavItem extends StatelessWidget {
+  final String label;
+  final String iconPath;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _BottomNavItem({
+    required this.label,
+    required this.iconPath,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isSelected ? AppColors.successPrimary : AppColors.iconMuted;
+
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(iconPath, color: color),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: color,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                height: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DashboardContent extends StatelessWidget {
@@ -199,7 +264,12 @@ class _DashboardContent extends StatelessWidget {
                   ),
                   _QuickAction(
                     label: 'Swap',
-                    icon: Icon(Icons.swap_horiz, color: AppColors.textDark),
+                    icon: Image.asset(
+                      'assets/png/transfer_icon.png',
+                      width: 24,
+                      height: 24,
+                      color: AppColors.textDark,
+                    ),
                     bgColor: AppColors.actionSwapBg,
                     onTap: () {},
                   ),
