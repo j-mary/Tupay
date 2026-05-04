@@ -7,11 +7,17 @@ class ParsedTransaction {
   final String id;
   final double amount;
   final String status;
+  final String? recipient;
+  final DateTime createdAt;
+  final String? memo;
 
   ParsedTransaction({
     required this.id,
     required this.amount,
     required this.status,
+    this.recipient,
+    required this.createdAt,
+    this.memo,
   });
 
   factory ParsedTransaction.fromJson(Map<String, dynamic> json) {
@@ -19,6 +25,9 @@ class ParsedTransaction {
       id: json['id'] as String,
       amount: (json['amount'] as num).toDouble(),
       status: json['status'] as String,
+      recipient: json['recipient'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      memo: json['memo'] as String?,
     );
   }
 }
@@ -63,22 +72,19 @@ class MockTransactionPayloadGenerator {
 /// A service designed to handle heavy data processing on a background thread.
 class TransactionParser {
   static Future<List<ParsedTransaction>> parseLargeJsonBackground(
-    String rawJson, {
-    int visibleLimit = 8,
-  }) async {
-    return Isolate.run(() => _parseJsonLogic(rawJson, visibleLimit));
+    String rawJson,
+  ) async {
+    return Isolate.run(() => _parseJsonLogic(rawJson));
   }
 
-  static List<ParsedTransaction> _parseJsonLogic(
-    String rawJson,
-    int visibleLimit,
-  ) {
+  static List<ParsedTransaction> _parseJsonLogic(String rawJson) {
     final decodedList = jsonDecode(rawJson) as List<dynamic>;
 
-    return decodedList
+    final parsed = decodedList
         .map((e) => ParsedTransaction.fromJson(e as Map<String, dynamic>))
-        .where((transaction) => transaction.amount > 0)
-        .take(visibleLimit)
         .toList(growable: false);
+
+    parsed.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return parsed;
   }
 }

@@ -18,11 +18,13 @@ class DashboardLoading extends DashboardState {
 /// Represents a successfully completed fetch operation.
 class DashboardLoaded extends DashboardState {
   final double totalBalance;
-  final List<Transaction> recentTransactions;
+  final List<DashboardTransaction> recentTransactions;
+  final int totalProcessedTransactions;
 
   const DashboardLoaded({
     required this.totalBalance,
     required this.recentTransactions,
+    required this.totalProcessedTransactions,
   });
 }
 

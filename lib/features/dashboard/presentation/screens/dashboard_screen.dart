@@ -134,17 +134,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   static final _skeletonDashboard = DashboardLoaded(
-    totalBalance: 12543.21,
+    totalBalance: 0.0,
     recentTransactions: List.generate(
       6,
-      (index) => Transaction(
-        id: 'TX-$index',
-        title: 'Transaction TX-00000$index',
-        amount: 2400 + index * 120,
+      (index) => DashboardTransaction(
+        id: 'SKELETON-$index',
+        title: 'Loading Transaction...',
+        amount: 0.0,
         date: DateTime.now(),
-        isCredit: index.isEven,
+        isCredit: true,
+        category: TransactionCategory.funding,
+        status: TransactionStatus.success,
       ),
     ),
+    totalProcessedTransactions: 0,
   );
 }
 
@@ -214,7 +217,7 @@ class _DashboardContent extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 132,
+              height: 145,
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -277,38 +280,7 @@ class _DashboardContent extends StatelessWidget {
           SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final tx = state.recentTransactions[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.backgroundWhite,
-                  child: Icon(
-                    tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                    color: tx.isCredit
-                        ? AppColors.successPrimary
-                        : Theme.of(context).colorScheme.error,
-                  ),
-                ),
-                title: Text(
-                  tx.title,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: Text(
-                  '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                trailing: CurrencyText(
-                  amount: tx.isCredit ? tx.amount : -tx.amount,
-                  currencyCode: 'USD',
-                  showSign: true,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: tx.isCredit
-                        ? AppColors.successPrimary
-                        : AppColors.textDark,
-                  ),
-                ),
-              );
+              return _TransactionItem(transaction: tx);
             }, childCount: state.recentTransactions.length),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
@@ -335,16 +307,38 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-            child: icon,
-          ),
-          const SizedBox(height: 8),
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-        ],
+      child: Container(
+        width: 103,
+        height: 112,
+        decoration: BoxDecoration(
+          color: AppColors.backgroundWhite,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+              child: icon,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: AppColors.textDark,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -367,13 +361,20 @@ class _WalletCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      width: 214,
+      width: 180,
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.cardStroke),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,7 +393,9 @@ class _WalletCard extends StatelessWidget {
               Text(
                 currencyCode,
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textGrey,
+                  color: AppColors.mutedText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
@@ -403,16 +406,140 @@ class _WalletCard extends StatelessWidget {
             currencyCode: currencyCode,
             style: theme.textTheme.titleLarge?.copyWith(
               color: AppColors.textHeading,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             country,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: AppColors.textGrey,
+              color: AppColors.iconMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w400,
               letterSpacing: 1.0,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionItem extends StatelessWidget {
+  final DashboardTransaction transaction;
+
+  const _TransactionItem({required this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    Color iconBgColor;
+    Widget icon;
+
+    switch (transaction.category) {
+      case TransactionCategory.funding:
+        iconBgColor = AppColors.actionFundBg;
+        icon = const Icon(Icons.add, color: AppColors.successPrimary, size: 20);
+        break;
+      case TransactionCategory.transfer:
+        iconBgColor = AppColors.actionPayBg;
+        icon = const Icon(
+          Icons.send,
+          color: AppColors.totalBalanceCardBg,
+          size: 20,
+        );
+        break;
+      case TransactionCategory.cardPayment:
+        iconBgColor = AppColors.actionSwapBg;
+        icon = const Icon(
+          Icons.credit_card,
+          color: AppColors.totalBalanceCardBg,
+          size: 20,
+        );
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundWhite,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: iconBgColor.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: icon,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  transaction.title,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: AppColors.textHeading,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                if (transaction.subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${transaction.subtitle} • 2m ago',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: AppColors.mutedText,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              CurrencyText(
+                amount: transaction.isCredit
+                    ? transaction.amount
+                    : -transaction.amount,
+                currencyCode: 'USD',
+                showSign: true,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: transaction.isCredit
+                      ? AppColors.successPrimary
+                      : AppColors.textHeading,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.actionFundBg.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                child: Text(
+                  'Success',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppColors.successPrimary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

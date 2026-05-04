@@ -14,12 +14,14 @@ void main() {
 
   testWidgets('Dashboard Screen Golden Test', (WidgetTester tester) async {
     final mockTransactions = [
-      Transaction(
+      DashboardTransaction(
         id: '1',
         title: 'Mock Transaction',
         amount: 100.0,
         date: DateTime(2026, 5, 4),
         isCredit: true,
+        category: TransactionCategory.funding,
+        status: TransactionStatus.success,
       ),
     ];
 
@@ -32,6 +34,7 @@ void main() {
                 DashboardLoaded(
                   totalBalance: 5000.0,
                   recentTransactions: mockTransactions,
+                  totalProcessedTransactions: 1,
                 ),
               ),
             ),
