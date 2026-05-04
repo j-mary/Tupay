@@ -1,7 +1,3 @@
-https://github.com/user-attachments/assets/2575a85b-0c0d-4d08-a3ec-a925b70c05aa
-
-
-
 # Tupay Mobile App
 
 Flutter assessment implementation for a secure fintech dashboard and transfer flow.
@@ -87,9 +83,13 @@ Assessment coverage checklist:
 The submission video is a 2-minute screen recording from an Android emulator.
 
 1. Show dashboard, wallet cards, quick actions, recent transactions, and bottom nav.
-2. Sscroll through the content to show the page stays responsive.
+2. Scroll through the content to show the page stays responsive.
 3. Tap Pay, enter the transfer amount and recipient details, and show the inline validation and currency switching.
 4. Continue to payment, choose a payment method, and review the transfer.
 5. Kill/restart the app and show direct restoration to the review route.
 6. Submit transfer and show the success state, then return home.
 7. When the app is hidden/backgrounded the blur effect kicks in, masking sensitive content in app switchers.
+
+## Demo Video
+
+[Android emulator recording](https://github.com/user-attachments/assets/2575a85b-0c0d-4d08-a3ec-a925b70c05aa)
