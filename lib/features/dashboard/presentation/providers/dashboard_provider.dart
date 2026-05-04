@@ -23,7 +23,6 @@ class DashboardNotifier extends AsyncNotifier<DashboardState> {
       await Future<void>.delayed(const Duration(milliseconds: 350));
 
       final recentTransactions = parsedTransactions
-          .take(5)
           .map((parsed) {
             return DashboardTransaction(
               id: parsed.id,

@@ -108,6 +108,57 @@ void main() {
     expect(find.text('₦5,000.00', skipOffstage: false), findsNothing);
     expect(find.text('₦1,850,000.00', skipOffstage: false), findsNothing);
   });
+
+  testWidgets('scroll to top button appears after scrolling down', (
+    WidgetTester tester,
+  ) async {
+    final mockTransactions = List.generate(
+      20,
+      (index) => DashboardTransaction(
+        id: '$index',
+        title: 'Mock Transaction $index',
+        amount: 100.0 + index,
+        date: DateTime(2026, 5, 4).add(Duration(minutes: index)),
+        isCredit: index.isEven,
+        category: TransactionCategory.funding,
+        status: TransactionStatus.success,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dashboardProvider.overrideWith(
+            () => MockDashboardNotifier(
+              DashboardLoaded(
+                totalBalance: 5000.0,
+                recentTransactions: mockTransactions,
+                totalProcessedTransactions: mockTransactions.length,
+              ),
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const DashboardScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsNothing);
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_up));
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsNothing);
+    expect(find.text('Tupay'), findsOneWidget);
+  });
 }
 
 class MockDashboardNotifier extends DashboardNotifier {

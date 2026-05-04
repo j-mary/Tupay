@@ -22,13 +22,39 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _currentIndex = 0;
   bool _isBalanceHidden = false;
+  bool _showScrollToTop = false;
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
-    Future.microtask(
-      () => ref.read(dashboardProvider.notifier).fetchDashboardData(),
-    );
+    _scrollController = ScrollController()..addListener(_handleScroll);
+    final dashboardState = ref.read(dashboardProvider);
+    if (!dashboardState.hasValue) {
+      Future.microtask(
+        () => ref.read(dashboardProvider.notifier).fetchDashboardData(),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) return;
+
+    final position = _scrollController.position;
+    final shouldShow = position.pixels > 180;
+
+    if (shouldShow == _showScrollToTop) return;
+
+    setState(() {
+      _showScrollToTop = shouldShow;
+    });
   }
 
   @override
@@ -79,6 +105,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: _DashboardContent(
                 state: state is DashboardLoaded ? state : _skeletonDashboard,
                 isBalanceHidden: _isBalanceHidden,
+                scrollController: _scrollController,
                 onToggleBalanceVisibility: () {
                   setState(() {
                     _isBalanceHidden = !_isBalanceHidden;
@@ -92,6 +119,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 },
               ),
             ),
+      floatingActionButton: _showScrollToTop
+          ? FloatingActionButton(
+              onPressed: () {
+                if (_scrollController.hasClients) {
+                  _scrollController.jumpTo(0);
+                }
+              },
+              backgroundColor: AppColors.successPrimary,
+              foregroundColor: AppColors.textWhite,
+              child: const Icon(Icons.keyboard_arrow_up),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: _DashboardBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
@@ -212,6 +252,7 @@ class _BottomNavItem extends StatelessWidget {
 class _DashboardContent extends StatelessWidget {
   final DashboardLoaded state;
   final bool isBalanceHidden;
+  final ScrollController scrollController;
   final VoidCallback onToggleBalanceVisibility;
   final Future<void> Function() onRefresh;
   final VoidCallback onPay;
@@ -219,6 +260,7 @@ class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
     required this.state,
     required this.isBalanceHidden,
+    required this.scrollController,
     required this.onToggleBalanceVisibility,
     required this.onRefresh,
     required this.onPay,
@@ -231,6 +273,7 @@ class _DashboardContent extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: CustomScrollView(
+        controller: scrollController,
         slivers: [
           SliverPersistentHeader(
             pinned: true,
