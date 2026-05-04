@@ -274,6 +274,9 @@ class _DashboardContent extends StatelessWidget {
       onRefresh: onRefresh,
       child: CustomScrollView(
         controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: ClampingScrollPhysics(),
+        ),
         slivers: [
           SliverPersistentHeader(
             pinned: true,

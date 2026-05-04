@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tupay_app/core/theme/app_theme.dart';
+import 'package:tupay_app/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:tupay_app/features/transactions/domain/entities/transaction.dart';
 import 'package:tupay_app/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:tupay_app/features/transactions/presentation/screens/transfer_config_screen.dart';
@@ -122,9 +123,10 @@ void main() {
 
     expect(find.byType(TransferConfigScreen), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Tupay'), findsOneWidget);
+    expect(find.byType(DashboardScreen), findsOneWidget);
   });
 
   testWidgets('continue displays validation feedback when form is invalid', (

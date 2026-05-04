@@ -100,6 +100,9 @@ class _TransferConfigScreenState extends ConsumerState<TransferConfigScreen> {
       ),
       body: SafeArea(
         child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: ClampingScrollPhysics(),
+          ),
           slivers: [
             const SliverToBoxAdapter(
               child: Padding(

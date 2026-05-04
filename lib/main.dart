@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/navigation/app_router.dart';
 import 'core/security/privacy_overlay.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_scroll_behavior.dart';
 import 'features/transactions/presentation/providers/transaction_provider.dart';
 
 void main() {
@@ -27,6 +28,7 @@ class TupayApp extends ConsumerWidget {
         title: 'Tupay',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        scrollBehavior: const AppScrollBehavior(),
         restorationScopeId: 'tupay_app',
         home: const Scaffold(body: Center(child: CircularProgressIndicator())),
       );
@@ -38,6 +40,7 @@ class TupayApp extends ConsumerWidget {
       title: 'Tupay',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      scrollBehavior: const AppScrollBehavior(),
       routerConfig: router,
       restorationScopeId: 'tupay_app',
       // The PrivacyOverlay wrapper is to handle background blurring

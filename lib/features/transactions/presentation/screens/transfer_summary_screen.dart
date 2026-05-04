@@ -81,6 +81,9 @@ class TransferSummaryScreen extends ConsumerWidget {
               child: ListView(
                 key: const PageStorageKey('transfer_review_scroll'),
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: ClampingScrollPhysics(),
+                ),
                 children: [
                   _buildSectionTitle('RECIPIENT'),
                   const SizedBox(height: 12),
