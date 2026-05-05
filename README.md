@@ -78,6 +78,8 @@ Assessment coverage checklist:
 - Dashboard and transfer summary goldens.
 - Widget coverage for restored review screen rendering.
 
+Responsive layout work lives on the `responsive-shell` branch. That branch contains the shared responsive shell and its widget coverage for mobile, tablet, and desktop breakpoints.
+
 ## Android Emulator Recording
 
 The submission video is a 2-minute screen recording from an Android emulator.
